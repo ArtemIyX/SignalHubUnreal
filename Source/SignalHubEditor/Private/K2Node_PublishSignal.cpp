@@ -4,6 +4,7 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "K2Node_CallFunction.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
 #include "SignalHubBlueprintLibrary.h"
 #include "SignalHubTypes.h"
@@ -12,8 +13,10 @@ void UK2Node_PublishSignal::AllocateDefaultPins()
 {
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Execute);
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UObject::StaticClass(), TEXT("WorldContextObject"));
-	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Wildcard, TEXT("Key"));
-	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Wildcard, TEXT("Payload"));
+	UEdGraphPin* keyPin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Wildcard, TEXT("Key"));
+	if (KeyPinType.PinCategory != UEdGraphSchema_K2::PC_Wildcard && !KeyPinType.PinCategory.IsNone()) keyPin->PinType = KeyPinType;
+	UEdGraphPin* payloadPin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Wildcard, TEXT("Payload"));
+	if (PayloadPinType.PinCategory != UEdGraphSchema_K2::PC_Wildcard && !PayloadPinType.PinCategory.IsNone()) payloadPin->PinType = PayloadPinType;
 	CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Byte, StaticEnum<ESignalPublishResult>(), TEXT("Result"));
 	CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Exec, UEdGraphSchema_K2::PN_Then);
 }
@@ -28,22 +31,39 @@ void UK2Node_PublishSignal::GetMenuActions(FBlueprintActionDatabaseRegistrar& In
 	if (InActionRegistrar.IsOpenForRegistration(actionKey)) InActionRegistrar.AddBlueprintAction(actionKey, UBlueprintNodeSpawner::Create(actionKey));
 }
 
-void UK2Node_PublishSignal::ResolveWildcard(UEdGraphPin* InPin)
+void UK2Node_PublishSignal::UpdateWildcardPinType(UEdGraphPin* InPin, FEdGraphPinType& InOutStoredType)
 {
 	if (!InPin) return;
 	if (InPin->LinkedTo.IsEmpty())
 	{
+		InOutStoredType = FEdGraphPinType();
 		InPin->PinType = FEdGraphPinType();
 		InPin->PinType.PinCategory = UEdGraphSchema_K2::PC_Wildcard;
 	}
-	else InPin->PinType = InPin->LinkedTo[0]->PinType;
-	GetGraph()->NotifyGraphChanged();
+	else
+	{
+		InOutStoredType = InPin->LinkedTo[0]->PinType;
+		InPin->PinType = InOutStoredType;
+	}
 }
 
 void UK2Node_PublishSignal::PinConnectionListChanged(UEdGraphPin* InPin)
 {
 	Super::PinConnectionListChanged(InPin);
-	if (InPin && (InPin->PinName == TEXT("Key") || InPin->PinName == TEXT("Payload"))) ResolveWildcard(InPin);
+	UEdGraphPin* keyPin = FindPin(TEXT("Key"));
+	UEdGraphPin* payloadPin = FindPin(TEXT("Payload"));
+	if (keyPin && (InPin == keyPin || keyPin->LinkedTo.Contains(InPin))) UpdateWildcardPinType(keyPin, KeyPinType);
+	else if (payloadPin && (InPin == payloadPin || payloadPin->LinkedTo.Contains(InPin))) UpdateWildcardPinType(payloadPin, PayloadPinType);
+	else return;
+	if (UBlueprint* blueprint = GetTypedOuter<UBlueprint>()) FBlueprintEditorUtils::MarkBlueprintAsModified(blueprint);
+	GetGraph()->NotifyGraphChanged();
+}
+
+void UK2Node_PublishSignal::PostReconstructNode()
+{
+	Super::PostReconstructNode();
+	UpdateWildcardPinType(FindPin(TEXT("Key")), KeyPinType);
+	UpdateWildcardPinType(FindPin(TEXT("Payload")), PayloadPinType);
 }
 
 void UK2Node_PublishSignal::ExpandNode(FKismetCompilerContext& InCompilerContext, UEdGraph* InSourceGraph)

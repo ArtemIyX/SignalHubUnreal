@@ -4,13 +4,15 @@
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "K2Node_CallFunction.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "KismetCompiler.h"
 #include "SignalHubBlueprintLibrary.h"
 #include "SignalKey.h"
 
 void UK2Node_MakeSignalKey::AllocateDefaultPins()
 {
-	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Wildcard, TEXT("Value"));
+	UEdGraphPin* valuePin = CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Wildcard, TEXT("Value"));
+	if (ValuePinType.PinCategory != UEdGraphSchema_K2::PC_Wildcard && !ValuePinType.PinCategory.IsNone()) valuePin->PinType = ValuePinType;
 	CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Struct, FSignalKey::StaticStruct(), TEXT("Key"));
 }
 
@@ -39,17 +41,30 @@ void UK2Node_MakeSignalKey::PinConnectionListChanged(UEdGraphPin* InPin)
 {
 	Super::PinConnectionListChanged(InPin);
 	UEdGraphPin* valuePin = GetValuePin();
-	if (!valuePin || InPin != valuePin) return;
-	if (valuePin->LinkedTo.IsEmpty())
-	{
-		valuePin->PinType = FEdGraphPinType();
-		valuePin->PinType.PinCategory = UEdGraphSchema_K2::PC_Wildcard;
-	}
-	else
-	{
-		valuePin->PinType = valuePin->LinkedTo[0]->PinType;
-	}
+	if (!valuePin || (InPin != valuePin && !valuePin->LinkedTo.Contains(InPin))) return;
+	UpdateValuePinType();
+	if (UBlueprint* blueprint = GetTypedOuter<UBlueprint>()) FBlueprintEditorUtils::MarkBlueprintAsModified(blueprint);
 	GetGraph()->NotifyGraphChanged();
+}
+
+void UK2Node_MakeSignalKey::PostReconstructNode()
+{
+	Super::PostReconstructNode();
+	UpdateValuePinType();
+}
+
+void UK2Node_MakeSignalKey::UpdateValuePinType()
+{
+	UEdGraphPin* valuePin = GetValuePin();
+	if (!valuePin) return;
+	if (!valuePin->LinkedTo.IsEmpty())
+	{
+		ValuePinType = valuePin->LinkedTo[0]->PinType;
+		valuePin->PinType = ValuePinType;
+		return;
+	}
+	ValuePinType = FEdGraphPinType();
+	valuePin->PinType.PinCategory = UEdGraphSchema_K2::PC_Wildcard;
 }
 
 void UK2Node_MakeSignalKey::ExpandNode(FKismetCompilerContext& InCompilerContext, UEdGraph* InSourceGraph)

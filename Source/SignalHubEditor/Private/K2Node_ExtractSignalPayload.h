@@ -1,5 +1,6 @@
 #pragma once
 
+#include "EdGraph/EdGraphPin.h"
 #include "K2Node.h"
 #include "K2Node_ExtractSignalPayload.generated.h"
 
@@ -15,11 +16,16 @@ public:
 	virtual FText GetTooltipText() const override;
 	virtual FText GetMenuCategory() const override;
 	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const override;
+	virtual void PostReconstructNode() override;
 	virtual void PinConnectionListChanged(UEdGraphPin* InPin) override;
 	virtual void ExpandNode(FKismetCompilerContext& InCompilerContext, UEdGraph* InSourceGraph) override;
 #pragma endregion
 
 private:
+	UPROPERTY()
+	FEdGraphPinType PayloadPinType;
+
+	void UpdatePayloadPinType();
 	UEdGraphPin* GetEnvelopePin() const;
 	UEdGraphPin* GetPayloadPin() const;
 };
