@@ -13,6 +13,20 @@ bool FSignalHubNativeKeyEqualityTest::RunTest(const FString& InParameters)
 	TestTrue(TEXT("Equal values with the same type compare equal"), first == same);
 	TestEqual(TEXT("Equal values with the same type hash equally"), GetTypeHash(first), GetTypeHash(same));
 	TestFalse(TEXT("Exact type is part of key identity"), first == differentType);
+	TestEqual(TEXT("Correct typed key access succeeds"), *first.TryGet<int32>(), 7);
+	TestNull(TEXT("Wrong typed key access fails"), first.TryGet<uint32>());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubDefaultLimitsTest, "SignalHub.Unit.Config.DefaultLimits", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubDefaultLimitsTest::RunTest(const FString& InParameters)
+{
+	const FSignalHubLimits limits;
+	TestEqual(TEXT("Default queue capacity"), limits.MaxQueuedSignals, 4096);
+	TestEqual(TEXT("Default tick capacity"), limits.MaxSignalsPerTick, 512);
+	TestEqual(TEXT("Default cascade depth"), limits.MaxCascadeDepth, 32);
+	TestEqual(TEXT("Default root dispatch capacity"), limits.MaxDispatchesPerRoot, 1024);
 	return true;
 }
 

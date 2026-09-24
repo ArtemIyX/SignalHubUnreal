@@ -56,6 +56,7 @@ public:
 		return Value == other->Value;
 	}
 	virtual FString Describe() const override { return TypeId.Describe(); }
+	const TKey& Get() const { return Value; }
 
 private:
 	TKey Value;
@@ -72,6 +73,13 @@ struct SIGNALHUB_API FSignalKey
 	const FSignalTypeId* GetTypeId() const { return Storage.IsValid() ? &Storage->GetTypeId() : nullptr; }
 	uint32 GetValueHash() const { return Storage.IsValid() ? Storage->GetValueHash() : 0; }
 	FString Describe() const { return Storage.IsValid() ? Storage->Describe().Left(256) : TEXT("Invalid"); }
+	template <typename TKey>
+	const TKey* TryGet() const
+	{
+		using FKeyType = std::decay_t<TKey>;
+		if (!Storage.IsValid() || Storage->GetTypeId() != TSignalTypeTraits<FKeyType>::Get()) return nullptr;
+		return &static_cast<const TSignalNativeKeyStorage<FKeyType>&>(*Storage).Get();
+	}
 	bool operator==(const FSignalKey& InOther) const;
 
 private:

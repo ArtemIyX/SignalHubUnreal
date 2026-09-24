@@ -57,6 +57,7 @@ private:
 	bool HasListeners(const FSignalKey& InKey, const FSignalTypeId& InPayloadType) const;
 	bool Tick(float InDeltaTime);
 	void Dispatch(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth);
+	void DispatchOne(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth);
 
 	struct FImpl;
 	TSharedPtr<FImpl> Impl;
@@ -64,4 +65,5 @@ private:
 	FSignalHubLimits Limits;
 	TAtomic<bool> bAcceptingPublishes = false;
 	bool bDispatching = false;
+	int32 CurrentDispatchDepth = 0;
 };

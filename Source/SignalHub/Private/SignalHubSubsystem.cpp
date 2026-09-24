@@ -8,6 +8,7 @@ struct USignalHubSubsystem::FImpl
 	struct FListener
 	{
 		int64 Id = 0;
+		bool bHasOwner = false;
 		TWeakObjectPtr<UObject> Owner;
 		TFunction<void(const FSignalPayload&, const FSignalContext&)> Callback;
 	};
@@ -24,6 +25,7 @@ struct USignalHubSubsystem::FImpl
 		FSignalKey Key;
 		FSignalPayload Payload;
 		int64 Sequence = 0;
+		int32 Depth = 0;
 	};
 
 	mutable FCriticalSection Lock;
@@ -81,7 +83,7 @@ FSignalSubscribeOutcome USignalHubSubsystem::SubscribeBoxed(const FSignalKey& In
 		return { ESignalSubscribeResult::PayloadTypeMismatch, {} };
 	}
 	const FSignalSubscriptionHandle handle { Impl->NextSubscriptionId++, channel.Generation };
-	channel.Listeners.Add({ handle.Id, InOwner, MoveTemp(InCallback) });
+	channel.Listeners.Add({ handle.Id, InOwner != nullptr, InOwner, MoveTemp(InCallback) });
 	return { ESignalSubscribeResult::Bound, handle };
 }
 
@@ -116,8 +118,10 @@ ESignalPublishResult USignalHubSubsystem::PublishBoxed(const FSignalKey& InKey, 
 	}
 	if (bDispatching)
 	{
+		const int32 depth = CurrentDispatchDepth + 1;
+		if (depth > Limits.MaxCascadeDepth) return ESignalPublishResult::CascadeLimit;
 		FScopeLock lock(&Impl->Lock);
-		Impl->Reentrant.Add({ InKey, InPayload, sequence });
+		Impl->Reentrant.Add({ InKey, InPayload, sequence, depth });
 		return ESignalPublishResult::QueuedReentrant;
 	}
 	Dispatch(InKey, InPayload, sequence, 0);
@@ -182,8 +186,25 @@ bool USignalHubSubsystem::Tick(float InDeltaTime)
 
 void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth)
 {
-	if (!Impl || InDepth >= Limits.MaxCascadeDepth) return;
+	if (!Impl || bDispatching) return;
 	bDispatching = true;
+	Impl->Reentrant.Reset();
+	Impl->Reentrant.Add({ InKey, InPayload, InSequence, InDepth });
+	for (int32 index = 0; index < Impl->Reentrant.Num(); ++index)
+	{
+		if (index >= Limits.MaxDispatchesPerRoot) break;
+		const FImpl::FQueuedSignal signal = Impl->Reentrant[index];
+		CurrentDispatchDepth = signal.Depth;
+		DispatchOne(signal.Key, signal.Payload, signal.Sequence, signal.Depth);
+	}
+	Impl->Reentrant.Reset();
+	CurrentDispatchDepth = 0;
+	bDispatching = false;
+}
+
+void USignalHubSubsystem::DispatchOne(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth)
+{
+	if (!Impl) return;
 	TArray<uint64> listenerIds;
 	{
 		FScopeLock lock(&Impl->Lock);
@@ -201,22 +222,9 @@ void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload
 			FImpl::FChannel* channel = Impl->Channels.Find(InKey);
 			if (!channel) continue;
 			const FImpl::FListener* listener = channel->Listeners.FindByPredicate([listenerId](const FImpl::FListener& value) { return value.Id == listenerId; });
-			if (!listener || (listener->Owner.IsValid() == false && listener->Owner.Get() != nullptr)) continue;
+			if (!listener || (listener->bHasOwner && !listener->Owner.IsValid())) continue;
 			callback = listener->Callback;
 		}
 		if (callback) callback(InPayload, context);
-	}
-	bDispatching = false;
-	TArray<FImpl::FQueuedSignal> next;
-	{
-		FScopeLock lock(&Impl->Lock);
-		next = MoveTemp(Impl->Reentrant);
-		Impl->Reentrant.Reset();
-	}
-	int32 dispatches = 0;
-	for (const FImpl::FQueuedSignal& signal : next)
-	{
-		if (++dispatches > Limits.MaxDispatchesPerRoot) break;
-		Dispatch(signal.Key, signal.Payload, signal.Sequence, InDepth + 1);
 	}
 }

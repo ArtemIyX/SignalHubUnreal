@@ -36,16 +36,16 @@ struct SIGNALHUB_API FSignalHubLimits
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Hub|Limits", meta = (ClampMin = "1", ToolTip = "Maximum worker-thread signals waiting for game-thread delivery."))
-	int32 MaxQueuedSignals = 1024;
+	int32 MaxQueuedSignals = 4096;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Hub|Limits", meta = (ClampMin = "1", ToolTip = "Maximum queued signals delivered during one game-thread tick."))
-	int32 MaxSignalsPerTick = 256;
+	int32 MaxSignalsPerTick = 512;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Hub|Limits", meta = (ClampMin = "1", ToolTip = "Maximum causal nested publication depth."))
 	int32 MaxCascadeDepth = 32;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Hub|Limits", meta = (ClampMin = "1", ToolTip = "Maximum deliveries caused by one root publication."))
-	int32 MaxDispatchesPerRoot = 4096;
+	int32 MaxDispatchesPerRoot = 1024;
 
 	void Clamp();
 };
