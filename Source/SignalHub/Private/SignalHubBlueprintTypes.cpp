@@ -86,6 +86,10 @@ bool ExtractSignalPayload(const FSignalPayload& InPayload, const FProperty* InPr
 	{
 		if (const bool* value = InPayload.TryGet<bool>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
+	else if (const FByteProperty* property = CastField<FByteProperty>(InProperty))
+	{
+		if (const uint8* value = InPayload.TryGet<uint8>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
 	else if (const FIntProperty* property = CastField<FIntProperty>(InProperty))
 	{
 		if (const int32* value = InPayload.TryGet<int32>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
