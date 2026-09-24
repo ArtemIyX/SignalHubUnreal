@@ -179,6 +179,10 @@ No-listener publication is intentionally silent. Queue and root-dispatch overflo
 
 `FSignalKey` is an opaque runtime value. Do not save, replicate, or use it as a config default. Rebuild it from its source value after loading.
 
+## Credits
+
+Inspired by [GameplayMessageRouter](https://github.com/imnazake/GameplayMessageRouter)
+
 ## LICENSE
 
 The project is licensed under [MIT](LICENSE)
