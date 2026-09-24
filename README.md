@@ -4,6 +4,9 @@ SignalHub is a per-`UGameInstance` typed in-process signal router for Unreal Eng
 
 It routes exact key and payload pairs without a global registry. Each game instance owns an isolated hub, so PIE sessions, clients, and servers do not share subscriptions.
 
+<img width="1182" height="605" alt="publish_signal" src="https://github.com/user-attachments/assets/7c300f63-777e-4613-b88a-cd3f5ef8bf25" />
+
+
 ## Enable the plugin
 
 1. Enable **Signal Hub** in Edit → Plugins.
@@ -65,6 +68,9 @@ struct FHealthChangedSignal
 
 Store the returned handle if the listener needs explicit cancellation.
 
+<img width="1208" height="488" alt="subscribe" src="https://github.com/user-attachments/assets/2f2dfd7e-4325-4473-bbad-8a0e306ccb8b" />
+
+
 ```cpp
 #include "SignalHubSubsystem.h"
 
@@ -89,6 +95,9 @@ void UMyWidgetController::BeginListening()
 The owner argument is weak. Passing `this` prevents a destroyed UObject from being invoked. Ownerless lambdas remain active until explicitly unsubscribed or the subsystem is destroyed.
 
 ### Publish
+
+<img width="946" height="279" alt="on_signal" src="https://github.com/user-attachments/assets/a228a4a1-4e34-415f-b989-531afa75cdde" />
+
 
 ```cpp
 void UMyHealthComponent::BroadcastHealthChanged()
