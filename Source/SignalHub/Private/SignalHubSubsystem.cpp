@@ -40,6 +40,15 @@ struct USignalHubSubsystem::FImpl
 	uint64 NextSubscriptionId = 1;
 	uint32 NextChannelGeneration = 1;
 	uint64 NextSequence = 1;
+
+	void PruneExpiredOwners()
+	{
+		for (auto it = Channels.CreateIterator(); it; ++it)
+		{
+			it.Value().Listeners.RemoveAll([](const FListener& listener) { return listener.bHasOwner && !listener.Owner.IsValid(); });
+			if (it.Value().Listeners.IsEmpty()) it.RemoveCurrent();
+		}
+	}
 };
 
 USignalHubSubsystem::~USignalHubSubsystem() = default;
@@ -80,6 +89,7 @@ FSignalSubscribeOutcome USignalHubSubsystem::SubscribeBoxed(const FSignalKey& In
 	if (!InCallback) return { ESignalSubscribeResult::InvalidCallback, {} };
 
 	FScopeLock lock(&Impl->Lock);
+	Impl->PruneExpiredOwners();
 	FImpl::FChannel* channel = Impl->Channels.Find(InKey);
 	if (!channel)
 	{
@@ -101,6 +111,7 @@ bool USignalHubSubsystem::HasListeners(const FSignalKey& InKey, const FSignalTyp
 {
 	if (!bAcceptingPublishes.Load() || !Impl || !InKey.IsValid()) return false;
 	FScopeLock lock(&Impl->Lock);
+	Impl->PruneExpiredOwners();
 	const FImpl::FChannel* channel = Impl->Channels.Find(InKey);
 	return channel && channel->PayloadType == InPayloadType && channel->Listeners.Num() > 0;
 }
@@ -116,6 +127,7 @@ ESignalPublishResult USignalHubSubsystem::PublishBoxed(const FSignalKey& InKey, 
 	uint64 listenerSerialCutoff;
 	{
 		FScopeLock lock(&Impl->Lock);
+		Impl->PruneExpiredOwners();
 		FImpl::FChannel* channel = Impl->Channels.Find(InKey);
 		if (!channel || channel->Listeners.Num() == 0) return ESignalPublishResult::NoListeners;
 		if (channel->PayloadType != *InPayload.GetTypeId()) return ESignalPublishResult::PayloadTypeMismatch;
@@ -176,6 +188,7 @@ bool USignalHubSubsystem::IsBound(const FSignalKey& InKey) const
 {
 	if (!Impl || !InKey.IsValid()) return false;
 	FScopeLock lock(&Impl->Lock);
+	Impl->PruneExpiredOwners();
 	const FImpl::FChannel* channel = Impl->Channels.Find(InKey);
 	return channel && !channel->Listeners.IsEmpty();
 }
@@ -185,6 +198,7 @@ FSignalHubDiagnostics USignalHubSubsystem::GetDiagnostics() const
 	FSignalHubDiagnostics result;
 	if (!Impl) return result;
 	FScopeLock lock(&Impl->Lock);
+	Impl->PruneExpiredOwners();
 	result.ActiveChannels = Impl->Channels.Num();
 	result.PendingSignals = Impl->Pending.Num();
 	for (const TPair<FSignalKey, FImpl::FChannel>& pair : Impl->Channels)
