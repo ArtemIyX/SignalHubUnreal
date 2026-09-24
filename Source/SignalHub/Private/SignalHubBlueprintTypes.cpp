@@ -25,6 +25,7 @@ FSignalKeyBuildResult BuildSignalKey(const FProperty* InProperty, const void* In
 	if (const FNameProperty* property = CastField<FNameProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FStrProperty* property = CastField<FStrProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FBoolProperty* property = CastField<FBoolProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
+	if (const FByteProperty* property = CastField<FByteProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FIntProperty* property = CastField<FIntProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FInt64Property* property = CastField<FInt64Property>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FUInt32Property* property = CastField<FUInt32Property>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
@@ -56,6 +57,7 @@ FSignalPayloadBuildResult BuildSignalPayload(const FProperty* InProperty, const 
 	if (const FNameProperty* property = CastField<FNameProperty>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
 	if (const FStrProperty* property = CastField<FStrProperty>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
 	if (const FBoolProperty* property = CastField<FBoolProperty>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
+	if (const FByteProperty* property = CastField<FByteProperty>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
 	if (const FIntProperty* property = CastField<FIntProperty>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
 	if (const FInt64Property* property = CastField<FInt64Property>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
 	if (const FUInt32Property* property = CastField<FUInt32Property>(InProperty)) return MakePayloadResult(property->GetPropertyValue(InValueAddress));
