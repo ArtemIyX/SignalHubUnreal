@@ -85,4 +85,17 @@ bool FSignalHubReentrantTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubEmptySignalTest, "SignalHub.Unit.Payload.Empty", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubEmptySignalTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	int32 count = 0;
+	const FName key(TEXT("Unit.Empty"));
+	fixture.Hub->Subscribe<FSignalEmptyPayload>(key, nullptr, [&count](const FSignalEmptyPayload&, const FSignalContext&) { ++count; });
+	TestEqual(TEXT("Empty signal is delivered"), fixture.Hub->PublishEmpty(key), ESignalPublishResult::Delivered);
+	TestEqual(TEXT("Empty listener runs"), count, 1);
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS

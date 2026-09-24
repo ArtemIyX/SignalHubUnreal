@@ -6,6 +6,10 @@
 class FSignalPayload;
 SIGNALHUB_API FSignalPayload MakeSignalStructPayload(const UScriptStruct* InStruct, const void* InValue);
 
+struct SIGNALHUB_API FSignalEmptyPayload
+{
+};
+
 class ISignalPayloadStorage
 {
 public:

@@ -65,6 +65,12 @@ public:
 		return Publish(MakeSignalKey(Forward<TKey>(InKey)), InPayload);
 	}
 
+	template <typename TKey>
+	ESignalPublishResult PublishEmpty(TKey&& InKey)
+	{
+		return Publish(Forward<TKey>(InKey), FSignalEmptyPayload{});
+	}
+
 	bool Unsubscribe(FSignalSubscriptionHandle InHandle);
 	void UnsubscribeAll(UObject* InOwner);
 	bool IsBound(const FSignalKey& InKey) const;
