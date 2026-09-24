@@ -1,6 +1,8 @@
 #include "K2Node_MakeSignalKey.h"
 
 #include "EdGraphSchema_K2.h"
+#include "BlueprintActionDatabaseRegistrar.h"
+#include "BlueprintNodeSpawner.h"
 #include "K2Node_CallFunction.h"
 #include "KismetCompiler.h"
 #include "SignalHubBlueprintLibrary.h"
@@ -25,6 +27,12 @@ FText UK2Node_MakeSignalKey::GetTooltipText() const
 FText UK2Node_MakeSignalKey::GetMenuCategory() const
 {
 	return NSLOCTEXT("SignalHub", "MenuCategory", "Signal Hub");
+}
+
+void UK2Node_MakeSignalKey::GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const
+{
+	UClass* actionKey = GetClass();
+	if (InActionRegistrar.IsOpenForRegistration(actionKey)) InActionRegistrar.AddBlueprintAction(actionKey, UBlueprintNodeSpawner::Create(actionKey));
 }
 
 void UK2Node_MakeSignalKey::PinConnectionListChanged(UEdGraphPin* InPin)

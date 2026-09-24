@@ -13,6 +13,7 @@ public:
 	virtual FText GetNodeTitle(ENodeTitleType::Type InTitleType) const override;
 	virtual FText GetTooltipText() const override;
 	virtual FText GetMenuCategory() const override;
+	virtual void GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const override;
 	virtual void PinConnectionListChanged(UEdGraphPin* InPin) override;
 	virtual void ExpandNode(FKismetCompilerContext& InCompilerContext, UEdGraph* InSourceGraph) override;
 

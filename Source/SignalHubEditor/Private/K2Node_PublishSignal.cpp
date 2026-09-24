@@ -1,6 +1,8 @@
 #include "K2Node_PublishSignal.h"
 
 #include "EdGraphSchema_K2.h"
+#include "BlueprintActionDatabaseRegistrar.h"
+#include "BlueprintNodeSpawner.h"
 #include "K2Node_CallFunction.h"
 #include "KismetCompiler.h"
 #include "SignalHubBlueprintLibrary.h"
@@ -19,6 +21,12 @@ void UK2Node_PublishSignal::AllocateDefaultPins()
 FText UK2Node_PublishSignal::GetNodeTitle(ENodeTitleType::Type InTitleType) const { return NSLOCTEXT("SignalHub", "PublishSignalTitle", "Publish Signal"); }
 FText UK2Node_PublishSignal::GetTooltipText() const { return NSLOCTEXT("SignalHub", "PublishSignalTooltip", "Publishes an exact SignalHub key and payload in this game instance."); }
 FText UK2Node_PublishSignal::GetMenuCategory() const { return NSLOCTEXT("SignalHub", "MenuCategory", "Signal Hub"); }
+
+void UK2Node_PublishSignal::GetMenuActions(FBlueprintActionDatabaseRegistrar& InActionRegistrar) const
+{
+	UClass* actionKey = GetClass();
+	if (InActionRegistrar.IsOpenForRegistration(actionKey)) InActionRegistrar.AddBlueprintAction(actionKey, UBlueprintNodeSpawner::Create(actionKey));
+}
 
 void UK2Node_PublishSignal::ResolveWildcard(UEdGraphPin* InPin)
 {
