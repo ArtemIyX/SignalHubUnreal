@@ -186,6 +186,11 @@ FSignalHubDiagnostics USignalHubSubsystem::GetDiagnostics() const
 	return result;
 }
 
+void USignalHubSubsystem::FlushPendingSignals()
+{
+	if (IsInGameThread()) Tick(0.0f);
+}
+
 bool USignalHubSubsystem::Tick(float InDeltaTime)
 {
 	if (!Impl || !bAcceptingPublishes.Load()) return true;

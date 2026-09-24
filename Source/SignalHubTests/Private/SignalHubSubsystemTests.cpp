@@ -4,6 +4,7 @@
 #include "SignalHubSubsystem.h"
 #include "SignalHubSubscriptionProxy.h"
 #include "Subsystems/SubsystemCollection.h"
+#include "Async/Async.h"
 
 #define SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
 
@@ -183,6 +184,22 @@ bool FSignalHubRemoveDuringDispatchTest::RunTest(const FString& InParameters)
 	fixture.Hub->Publish(key, 1);
 	TestEqual(TEXT("First listener runs"), firstCount, 1);
 	TestEqual(TEXT("Removed later listener is skipped"), laterCount, 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubWorkerQueueTest, "SignalHub.Unit.Thread.WorkerPublishQueued", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubWorkerQueueTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FName key(TEXT("Unit.WorkerQueue"));
+	int32 callbackCount = 0;
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&callbackCount](const int32, const FSignalContext&) { ++callbackCount; });
+	const TFuture<ESignalPublishResult> result = Async(EAsyncExecution::Thread, [&fixture, key] { return fixture.Hub->Publish(key, 9); });
+	TestEqual(TEXT("Worker publication queues"), result.Get(), ESignalPublishResult::Queued);
+	TestEqual(TEXT("Worker callback is deferred"), callbackCount, 0);
+	fixture.Hub->FlushPendingSignals();
+	TestEqual(TEXT("Game-thread flush delivers worker signal"), callbackCount, 1);
 	return true;
 }
 

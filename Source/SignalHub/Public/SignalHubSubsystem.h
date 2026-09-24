@@ -76,6 +76,7 @@ public:
 	bool IsBound(const FSignalKey& InKey) const;
 	FSignalHubLimits GetLimits() const { return Limits; }
 	FSignalHubDiagnostics GetDiagnostics() const;
+	void FlushPendingSignals();
 
 private:
 	FSignalSubscribeOutcome SubscribeBoxed(const FSignalKey& InKey, const FSignalTypeId& InPayloadType, UObject* InOwner, TFunction<void(const FSignalPayload&, const FSignalContext&)>&& InCallback);
