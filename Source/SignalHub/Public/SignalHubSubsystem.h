@@ -81,6 +81,7 @@ public:
 	bool Unsubscribe(FSignalSubscriptionHandle InHandle);
 	int32 UnsubscribeAll(UObject* InOwner);
 	bool IsBound(const FSignalKey& InKey) const;
+	ESignalPublishResult PublishPayload(const FSignalKey& InKey, const FSignalPayload& InPayload);
 	FSignalHubLimits GetLimits() const { return Limits; }
 	FSignalHubDiagnostics GetDiagnostics() const;
 	void FlushPendingSignals();

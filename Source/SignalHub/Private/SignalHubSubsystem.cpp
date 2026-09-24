@@ -207,6 +207,11 @@ bool USignalHubSubsystem::IsBound(const FSignalKey& InKey) const
 	return channel && !channel->Listeners.IsEmpty();
 }
 
+ESignalPublishResult USignalHubSubsystem::PublishPayload(const FSignalKey& InKey, const FSignalPayload& InPayload)
+{
+	return PublishBoxed(InKey, InPayload);
+}
+
 FSignalHubDiagnostics USignalHubSubsystem::GetDiagnostics() const
 {
 	FSignalHubDiagnostics result;
