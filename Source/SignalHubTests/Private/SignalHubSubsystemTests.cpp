@@ -165,4 +165,25 @@ bool FSignalHubAddDuringDispatchTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubRemoveDuringDispatchTest, "SignalHub.Unit.Publish.RemoveLaterListener", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubRemoveDuringDispatchTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FName key(TEXT("Unit.RemoveDuringDispatch"));
+	int32 firstCount = 0;
+	int32 laterCount = 0;
+	FSignalSubscriptionHandle laterHandle;
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&fixture, &firstCount, &laterHandle](const int32, const FSignalContext&)
+	{
+		++firstCount;
+		fixture.Hub->Unsubscribe(laterHandle);
+	});
+	laterHandle = fixture.Hub->Subscribe<int32>(key, nullptr, [&laterCount](const int32, const FSignalContext&) { ++laterCount; }).Handle;
+	fixture.Hub->Publish(key, 1);
+	TestEqual(TEXT("First listener runs"), firstCount, 1);
+	TestEqual(TEXT("Removed later listener is skipped"), laterCount, 0);
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS
