@@ -1,0 +1,191 @@
+#include "SignalHubBlueprintLibrary.h"
+
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
+#include "SignalHubSubsystem.h"
+#include "SignalHubSubscriptionProxy.h"
+#include "SignalHubBlueprintTypes.h"
+#include "UObject/Stack.h"
+#include "UObject/UnrealType.h"
+
+FSignalKey USignalHubBlueprintLibrary::MakeNameSignalKey(FName InValue)
+{
+	return MakeSignalKey(InValue);
+}
+
+bool USignalHubBlueprintLibrary::IsNameSignalBound(const UObject* WorldContextObject, FName InKey)
+{
+	if (USignalHubSubsystem* hub = ResolveHub(WorldContextObject))
+		return hub->IsBound(MakeSignalKey(InKey));
+	return false;
+}
+
+FSignalHubDiagnostics USignalHubBlueprintLibrary::GetSignalHubDiagnostics(const UObject* WorldContextObject)
+{
+	if (USignalHubSubsystem* hub = ResolveHub(WorldContextObject))
+		return hub->GetDiagnostics();
+	return {};
+}
+
+bool USignalHubBlueprintLibrary::StopListeningForSignal(USignalHubSubscription* InSubscription)
+{
+	return InSubscription ? InSubscription->Cancel() : false;
+}
+
+/*
+USignalHubSubscription* USignalHubBlueprintLibrary::CreateInt32SignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, ESignalSubscribeResult& OutResult)
+{
+	OutResult = ESignalSubscribeResult::ShuttingDown;
+	USignalHubSubsystem* hub = ResolveHub(WorldContextObject);
+	if (!hub)
+	{
+		OutResult = ESignalSubscribeResult::InvalidKey;
+		return nullptr;
+	}
+	USignalHubSubscription* subscription = NewObject<USignalHubSubscription>(hub->GetGameInstance());
+	const FSignalSubscribeOutcome outcome = hub->Subscribe<int32>(InKey, subscription,
+		[weakSubscription = TWeakObjectPtr<USignalHubSubscription>(subscription)](const int32& payload, const FSignalContext& context) {
+			if (USignalHubSubscription* activeSubscription = weakSubscription.Get())
+				activeSubscription->Deliver(MakeSignalPayload(payload), context);
+		});
+	OutResult = outcome.Result;
+	if (!outcome.IsBound())
+	{
+		subscription->Invalidate();
+		return nullptr;
+	}
+	subscription->Initialize(hub, outcome.Handle);
+	return subscription;
+}
+*/
+
+USignalHubSubscription* USignalHubBlueprintLibrary::CreateSignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, const FSignalBlueprintType& InPayloadType, ESignalSubscribeResult& OutResult)
+{
+	OutResult = ESignalSubscribeResult::InvalidCallback;
+	USignalHubSubsystem* hub = ResolveHub(WorldContextObject);
+	if (!hub || !InKey.IsValid() || !InPayloadType.IsValid())
+		return nullptr;
+	USignalHubSubscription* subscription = NewObject<USignalHubSubscription>(hub->GetGameInstance());
+	auto bind = [&]<typename TValue>() {
+		return hub->SubscribePayload(InKey, TSignalTypeTraits<TValue>::Get(), subscription,
+			[weakSubscription = TWeakObjectPtr<USignalHubSubscription>(subscription)](const FSignalPayload& payload, const FSignalContext& context) {
+				if (USignalHubSubscription* activeSubscription = weakSubscription.Get())
+					activeSubscription->Deliver(payload, context);
+			});
+	};
+	FSignalSubscribeOutcome outcome;
+	switch (InPayloadType.Kind)
+	{
+		case ESignalBlueprintValueKind::Bool:
+			outcome = bind.template operator()<bool>();
+			break;
+		case ESignalBlueprintValueKind::Byte:
+			outcome = bind.template operator()<uint8>();
+			break;
+		case ESignalBlueprintValueKind::Int32:
+			outcome = bind.template operator()<int32>();
+			break;
+		case ESignalBlueprintValueKind::Int64:
+			outcome = bind.template operator()<int64>();
+			break;
+		case ESignalBlueprintValueKind::UInt32:
+			outcome = bind.template operator()<uint32>();
+			break;
+		case ESignalBlueprintValueKind::Float:
+			outcome = bind.template operator()<float>();
+			break;
+		case ESignalBlueprintValueKind::Double:
+			outcome = bind.template operator()<double>();
+			break;
+		case ESignalBlueprintValueKind::Name:
+			outcome = bind.template operator()<FName>();
+			break;
+		case ESignalBlueprintValueKind::String:
+			outcome = bind.template operator()<FString>();
+			break;
+		case ESignalBlueprintValueKind::Struct:
+			outcome = hub->SubscribePayload(InKey, { ESignalTypeDomain::BuiltIn, InPayloadType.StructType->GetFName(), FName(InPayloadType.StructType->GetPathName()) }, subscription,
+				[weakSubscription = TWeakObjectPtr<USignalHubSubscription>(subscription)](const FSignalPayload& payload, const FSignalContext& context) {
+					if (USignalHubSubscription* activeSubscription = weakSubscription.Get())
+						activeSubscription->Deliver(payload, context);
+				});
+			break;
+		default:
+			return nullptr;
+	}
+	OutResult = outcome.Result;
+	if (!outcome.IsBound())
+	{
+		subscription->Invalidate();
+		return nullptr;
+	}
+	subscription->Initialize(hub, outcome.Handle);
+	return subscription;
+}
+
+ESignalPublishResult USignalHubBlueprintLibrary::PublishSignalWildcard(const UObject* WorldContextObject, const int32& InKey, const int32& InPayload)
+{
+	return ESignalPublishResult::InvalidKey;
+}
+
+DEFINE_FUNCTION(USignalHubBlueprintLibrary::execPublishSignalWildcard)
+{
+	P_GET_OBJECT(UObject, worldContextObject);
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* keyProperty = Stack.MostRecentProperty;
+	const void* keyAddress = Stack.MostRecentPropertyAddress;
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* payloadProperty = Stack.MostRecentProperty;
+	const void* payloadAddress = Stack.MostRecentPropertyAddress;
+	P_FINISH;
+	P_NATIVE_BEGIN;
+		const FSignalKeyBuildResult key = BuildSignalKey(keyProperty, keyAddress);
+		const FSignalPayloadBuildResult payload = BuildSignalPayload(payloadProperty, payloadAddress);
+		USignalHubSubsystem* hub = ResolveHub(worldContextObject);
+		const ESignalPublishResult keyFailure = key.Result == ESignalValueBuildResult::UnsupportedType ? ESignalPublishResult::UnsupportedKeyType : ESignalPublishResult::InvalidKey;
+		const ESignalPublishResult payloadFailure = payload.Result == ESignalValueBuildResult::UnsupportedType ? ESignalPublishResult::UnsupportedPayloadType : ESignalPublishResult::InvalidPayloadType;
+		*(ESignalPublishResult*)RESULT_PARAM = !key.IsSuccess() ? keyFailure : !payload.IsSuccess() ? payloadFailure : hub ? hub->PublishPayload(key.Key, payload.Payload) : ESignalPublishResult::InvalidWorldContext;
+	P_NATIVE_END;
+}
+
+FSignalKey USignalHubBlueprintLibrary::MakeSignalKeyWildcard(const int32& InValue)
+{
+	return {};
+}
+
+DEFINE_FUNCTION(USignalHubBlueprintLibrary::execMakeSignalKeyWildcard)
+{
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* property = Stack.MostRecentProperty;
+	const void* address = Stack.MostRecentPropertyAddress;
+	P_FINISH;
+	P_NATIVE_BEGIN;
+		*(FSignalKey*)RESULT_PARAM = BuildSignalKey(property, address).Key;
+	P_NATIVE_END;
+}
+
+bool USignalHubBlueprintLibrary::TryExtractSignalPayload(const FSignalBlueprintEnvelope& InEnvelope, int32& OutPayload)
+{
+	return false;
+}
+
+DEFINE_FUNCTION(USignalHubBlueprintLibrary::execTryExtractSignalPayload)
+{
+	P_GET_STRUCT_REF(FSignalBlueprintEnvelope, envelope);
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* property = Stack.MostRecentProperty;
+	void* address = Stack.MostRecentPropertyAddress;
+	P_FINISH;
+	P_NATIVE_BEGIN;
+		*(bool*)RESULT_PARAM = envelope.TryExtract(property, address);
+	P_NATIVE_END;
+}
+
+USignalHubSubsystem* USignalHubBlueprintLibrary::ResolveHub(const UObject* WorldContextObject)
+{
+	if (!WorldContextObject || !GEngine)
+		return nullptr;
+	UWorld* world = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::ReturnNull);
+	UGameInstance* gameInstance = world ? world->GetGameInstance() : nullptr;
+	return gameInstance ? gameInstance->GetSubsystem<USignalHubSubsystem>() : nullptr;
+}
