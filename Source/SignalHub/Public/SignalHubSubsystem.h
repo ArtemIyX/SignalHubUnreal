@@ -35,7 +35,7 @@ public:
 		return SubscribeBoxed(InKey, TSignalTypeTraits<FPayloadType>::Get(), InOwner, MoveTemp(callback));
 	}
 
-	template <typename TPayload, typename TKey, typename TCallback>
+	template <typename TPayload, typename TKey, typename TCallback, std::enable_if_t<!std::is_same_v<std::decay_t<TKey>, FSignalKey>, int> = 0>
 	FSignalSubscribeOutcome Subscribe(TKey&& InKey, UObject* InOwner, TCallback&& InCallback)
 	{
 		return Subscribe<TPayload>(MakeSignalKey(Forward<TKey>(InKey)), InOwner, Forward<TCallback>(InCallback));
@@ -59,7 +59,7 @@ public:
 		return PublishBoxed(InKey, MakeSignalPayload(InPayload));
 	}
 
-	template <typename TKey, typename TPayload>
+	template <typename TKey, typename TPayload, std::enable_if_t<!std::is_same_v<std::decay_t<TKey>, FSignalKey>, int> = 0>
 	ESignalPublishResult Publish(TKey&& InKey, const TPayload& InPayload)
 	{
 		return Publish(MakeSignalKey(Forward<TKey>(InKey)), InPayload);
