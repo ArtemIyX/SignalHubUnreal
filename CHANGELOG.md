@@ -7,6 +7,7 @@
 - Per-game-instance typed signal channels, bounded worker delivery, and subscription lifetime management.
 - Runtime property conversion for supported Blueprint wildcard key and payload values.
 - Hidden runtime Blueprint thunks for key creation and signal publication.
+- Editor-only `Extract Signal Payload` node, which expands to the hidden payload-extraction thunk and infers its output schema from the connected Blueprint value.
 
 ### Notes
 
