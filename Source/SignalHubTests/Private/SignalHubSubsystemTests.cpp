@@ -2,6 +2,7 @@
 
 #include "Engine/GameInstance.h"
 #include "SignalHubSubsystem.h"
+#include "SignalHubSubscriptionProxy.h"
 #include "Subsystems/SubsystemCollection.h"
 
 #define SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
@@ -95,6 +96,21 @@ bool FSignalHubEmptySignalTest::RunTest(const FString& InParameters)
 	fixture.Hub->Subscribe<FSignalEmptyPayload>(key, nullptr, [&count](const FSignalEmptyPayload&, const FSignalContext&) { ++count; });
 	TestEqual(TEXT("Empty signal is delivered"), fixture.Hub->PublishEmpty(key), ESignalPublishResult::Delivered);
 	TestEqual(TEXT("Empty listener runs"), count, 1);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubSubscriptionProxyTest, "SignalHub.Unit.BlueprintProxy.CancelIdempotent", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubSubscriptionProxyTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FSignalSubscribeOutcome subscription = fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Proxy")), nullptr, [](const int32, const FSignalContext&) {});
+	USignalHubSubscription* proxy = NewObject<USignalHubSubscription>(fixture.GameInstance);
+	proxy->Initialize(fixture.Hub, subscription.Handle);
+	TestTrue(TEXT("Initialized proxy is active"), proxy->IsActive());
+	TestTrue(TEXT("First cancel removes subscription"), proxy->Cancel());
+	TestFalse(TEXT("Canceled proxy is inactive"), proxy->IsActive());
+	TestFalse(TEXT("Second cancel is idempotent"), proxy->Cancel());
 	return true;
 }
 
