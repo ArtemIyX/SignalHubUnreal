@@ -3,13 +3,13 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "SignalHub",
-	"Description": "Custom event-bus framework",
-	"Category": "Other",
+	"Description": "Per-game-instance typed in-process signal routing.",
+	"Category": "Gameplay",
 	"CreatedBy": "Wellsaik",
 	"CreatedByURL": "https://github.com/ArtemIyX/",
 	"DocsURL": "",
 	"MarketplaceURL": "",
-	"CanContainContent": true,
+	"CanContainContent": false,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
@@ -17,6 +17,16 @@
 		{
 			"Name": "SignalHub",
 			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "SignalHubEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "SignalHubTests",
+			"Type": "DeveloperTool",
 			"LoadingPhase": "Default"
 		}
 	]
