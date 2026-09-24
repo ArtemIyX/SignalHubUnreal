@@ -2,6 +2,7 @@
 #include "SignalHubSettings.h"
 
 #include "Containers/Ticker.h"
+#include "Logging/StructuredLog.h"
 #include "Misc/ScopeLock.h"
 
 struct USignalHubSubsystem::FImpl
@@ -276,9 +277,14 @@ void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload
 	bDispatching = true;
 	Impl->Reentrant.Reset();
 	Impl->Reentrant.Add({ InKey, InPayload, InSequence, InDepth, InChannelGeneration, InListenerSerialCutoff });
+	bool bDispatchLimitExceeded = false;
 	for (int32 index = 0; index < Impl->Reentrant.Num(); ++index)
 	{
-		if (index >= Limits.MaxDispatchesPerRoot) break;
+		if (index >= Limits.MaxDispatchesPerRoot)
+		{
+			bDispatchLimitExceeded = true;
+			break;
+		}
 		const FImpl::FQueuedSignal signal = Impl->Reentrant[index];
 		CurrentDispatchDepth = signal.Depth;
 		{
@@ -286,6 +292,12 @@ void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload
 			Impl->PeakCascadeDepth = FMath::Max(Impl->PeakCascadeDepth, signal.Depth);
 		}
 		DispatchOne(signal.Key, signal.Payload, signal.Sequence, signal.Depth, signal.ChannelGeneration, signal.ListenerSerialCutoff);
+	}
+	if (bDispatchLimitExceeded)
+	{
+		FScopeLock lock(&Impl->Lock);
+		++Impl->CascadeRejections;
+		UE_LOGFMT(LogSignalHub, Warning, "SignalHub discarded descendants after reaching the per-root dispatch limit of {Limit}.", Limits.MaxDispatchesPerRoot);
 	}
 	Impl->Reentrant.Reset();
 	CurrentDispatchDepth = 0;
