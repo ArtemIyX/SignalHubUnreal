@@ -7,9 +7,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubNativeKeyEqualityTest, "SignalHub.Uni
 
 bool FSignalHubNativeKeyEqualityTest::RunTest(const FString& InParameters)
 {
-	const FSignalKey first = MakeSignalKey(int32(7));
-	const FSignalKey same = MakeSignalKey(int32(7));
-	const FSignalKey differentType = MakeSignalKey(uint32(7));
+	const FSignalKey first = MakeSignalKey(static_cast<int32>(7));
+	const FSignalKey same = MakeSignalKey(static_cast<int32>(7));
+	const FSignalKey differentType = MakeSignalKey(static_cast<uint32>(7));
 	TestTrue(TEXT("Equal values with the same type compare equal"), first == same);
 	TestEqual(TEXT("Equal values with the same type hash equally"), GetTypeHash(first), GetTypeHash(same));
 	TestFalse(TEXT("Exact type is part of key identity"), first == differentType);

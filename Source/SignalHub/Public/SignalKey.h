@@ -77,16 +77,25 @@ template <typename TKey>
 class TSignalNativeKeyStorage final : public ISignalKeyStorage
 {
 public:
-	explicit TSignalNativeKeyStorage(TKey&& InValue) : Value(MoveTemp(InValue)), TypeId(TSignalTypeTraits<TKey>::Get()), ValueHash(SignalHubGetValueHash(Value)) {}
-	explicit TSignalNativeKeyStorage(const TKey& InValue) : Value(InValue), TypeId(TSignalTypeTraits<TKey>::Get()), ValueHash(SignalHubGetValueHash(Value)) {}
+	explicit TSignalNativeKeyStorage(TKey&& InValue)
+		: Value(MoveTemp(InValue))
+		, TypeId(TSignalTypeTraits<TKey>::Get())
+		, ValueHash(SignalHubGetValueHash(Value)) {}
+
+	explicit TSignalNativeKeyStorage(const TKey& InValue)
+		: Value(InValue)
+		, TypeId(TSignalTypeTraits<TKey>::Get())
+		, ValueHash(SignalHubGetValueHash(Value)) {}
 
 	virtual const FSignalTypeId& GetTypeId() const override { return TypeId; }
 	virtual uint32 GetValueHash() const override { return ValueHash; }
+
 	virtual bool Equals(const ISignalKeyStorage& InOther) const override
 	{
 		const TSignalNativeKeyStorage* other = static_cast<const TSignalNativeKeyStorage*>(&InOther);
 		return Value == other->Value;
 	}
+
 	virtual FString Describe() const override { return TypeId.Describe(); }
 	const TKey& Get() const { return Value; }
 
@@ -105,13 +114,16 @@ struct SIGNALHUB_API FSignalKey
 	const FSignalTypeId* GetTypeId() const { return Storage.IsValid() ? &Storage->GetTypeId() : nullptr; }
 	uint32 GetValueHash() const { return Storage.IsValid() ? Storage->GetValueHash() : 0; }
 	FString Describe() const { return Storage.IsValid() ? Storage->Describe().Left(256) : TEXT("Invalid"); }
+
 	template <typename TKey>
 	const TKey* TryGet() const
 	{
 		using FKeyType = std::decay_t<TKey>;
-		if (!Storage.IsValid() || Storage->GetTypeId() != TSignalTypeTraits<FKeyType>::Get()) return nullptr;
+		if (!Storage.IsValid() || Storage->GetTypeId() != TSignalTypeTraits<FKeyType>::Get())
+			return nullptr;
 		return &static_cast<const TSignalNativeKeyStorage<FKeyType>&>(*Storage).Get();
 	}
+
 	bool operator==(const FSignalKey& InOther) const;
 
 private:

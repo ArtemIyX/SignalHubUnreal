@@ -26,8 +26,7 @@ public:
 	FSignalSubscribeOutcome Subscribe(const FSignalKey& InKey, UObject* InOwner, TCallback&& InCallback)
 	{
 		using FPayloadType = std::decay_t<TPayload>;
-		TFunction<void(const FSignalPayload&, const FSignalContext&)> callback = [fn = Forward<TCallback>(InCallback)](const FSignalPayload& payload, const FSignalContext& context)
-		{
+		TFunction<void(const FSignalPayload&, const FSignalContext&)> callback = [fn = Forward<TCallback>(InCallback)](const FSignalPayload& payload, const FSignalContext& context) {
 			if (const FPayloadType* value = payload.TryGet<FPayloadType>())
 			{
 				fn(*value, context);
@@ -45,14 +44,16 @@ public:
 	template <typename TPayload, typename TKey, typename TObject>
 	FSignalSubscribeOutcome Subscribe(TKey&& InKey, TObject* InObject, void (TObject::*InCallback)(const TPayload&, const FSignalContext&))
 	{
-		if (!InObject || !InCallback) return { ESignalSubscribeResult::InvalidCallback, {} };
+		if (!InObject || !InCallback)
+			return { ESignalSubscribeResult::InvalidCallback, {} };
 		return Subscribe<TPayload>(Forward<TKey>(InKey), InObject, [InObject, InCallback](const TPayload& payload, const FSignalContext& context) { (InObject->*InCallback)(payload, context); });
 	}
 
 	template <typename TPayload, typename TKey, typename TObject>
 	FSignalSubscribeOutcome Subscribe(TKey&& InKey, TObject* InObject, void (TObject::*InCallback)(const FSignalContext&, const TPayload&))
 	{
-		if (!InObject || !InCallback) return { ESignalSubscribeResult::InvalidCallback, {} };
+		if (!InObject || !InCallback)
+			return { ESignalSubscribeResult::InvalidCallback, {} };
 		return Subscribe<TPayload>(Forward<TKey>(InKey), InObject, [InObject, InCallback](const TPayload& payload, const FSignalContext& context) { (InObject->*InCallback)(context, payload); });
 	}
 

@@ -14,7 +14,7 @@ FName USignalHubSettings::GetCategoryName() const
 
 FName USignalHubSettings::GetSectionName() const
 {
-	return TEXT("SignalHub");
+	return TEXT("Signal Hub");
 }
 
 #if WITH_EDITOR
@@ -25,7 +25,7 @@ FText USignalHubSettings::GetSectionText() const
 
 FText USignalHubSettings::GetSectionDescription() const
 {
-	return LOCTEXT("SectionDescription", "Configures queue and dispatch limits for per-game-instance SignalHub routing.");
+	return LOCTEXT("SignalHubSectionDescription", "Configures queue and dispatch limits for per-game-instance SignalHub routing.");
 }
 #endif
 

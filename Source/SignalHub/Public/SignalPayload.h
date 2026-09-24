@@ -7,9 +7,7 @@ class FSignalPayload;
 class FReferenceCollector;
 SIGNALHUB_API FSignalPayload MakeSignalStructPayload(const UScriptStruct* InStruct, const void* InValue);
 
-struct SIGNALHUB_API FSignalEmptyPayload
-{
-};
+struct SIGNALHUB_API FSignalEmptyPayload {};
 
 class ISignalPayloadStorage
 {
@@ -45,7 +43,10 @@ template <typename TPayload>
 class TSignalNativePayloadStorage final : public ISignalPayloadStorage
 {
 public:
-	explicit TSignalNativePayloadStorage(const TPayload& InValue) : Value(InValue), TypeId(TSignalTypeTraits<TPayload>::Get()) {}
+	explicit TSignalNativePayloadStorage(const TPayload& InValue)
+		: Value(InValue)
+		, TypeId(TSignalTypeTraits<TPayload>::Get()) {}
+
 	virtual const FSignalTypeId& GetTypeId() const override { return TypeId; }
 	virtual bool IsWorkerCopySafe() const override { return TSignalPayloadTraits<TPayload>::bThreadSafeCopy; }
 	const TPayload& Get() const { return Value; }
@@ -62,10 +63,17 @@ public:
 	bool IsValid() const { return Storage.IsValid(); }
 	const FSignalTypeId* GetTypeId() const { return Storage.IsValid() ? &Storage->GetTypeId() : nullptr; }
 	bool IsWorkerCopySafe() const { return Storage.IsValid() && Storage->IsWorkerCopySafe(); }
-	void AddReferencedObjects(FReferenceCollector& InCollector) const { if (Storage.IsValid()) Storage->AddReferencedObjects(InCollector); }
+
+	void AddReferencedObjects(FReferenceCollector& InCollector) const
+	{
+		if (Storage.IsValid())
+			Storage->AddReferencedObjects(InCollector);
+	}
+
 	const void* TryGetStruct(const UScriptStruct* InStruct) const
 	{
-		if (!Storage.IsValid() || !InStruct || Storage->GetTypeId().Name != InStruct->GetFName()) return nullptr;
+		if (!Storage.IsValid() || !InStruct || Storage->GetTypeId().Name != InStruct->GetFName())
+			return nullptr;
 		return Storage->GetReflectedStructMemory();
 	}
 
