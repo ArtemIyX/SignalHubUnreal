@@ -12,6 +12,19 @@ FSignalKeyBuildResult MakeKeyResult(const TValue& InValue)
 	return { ESignalValueBuildResult::Success, MakeSignalKey(InValue), {} };
 }
 
+FSignalBlueprintEnvelope FSignalBlueprintEnvelope::Make(const FSignalPayload& InPayload, const FSignalContext& InContext)
+{
+	FSignalBlueprintEnvelope result;
+	result.Payload = InPayload;
+	result.Context = InContext;
+	return result;
+}
+
+bool FSignalBlueprintEnvelope::TryExtract(const FProperty* InProperty, void* OutValueAddress) const
+{
+	return ExtractSignalPayload(Payload, InProperty, OutValueAddress);
+}
+
 template <typename TValue>
 FSignalPayloadBuildResult MakePayloadResult(const TValue& InValue)
 {

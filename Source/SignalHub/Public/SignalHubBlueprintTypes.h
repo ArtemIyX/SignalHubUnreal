@@ -6,6 +6,21 @@
 
 class FProperty;
 
+USTRUCT(BlueprintType)
+struct SIGNALHUB_API FSignalBlueprintEnvelope
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub")
+	FSignalContext Context;
+
+	static FSignalBlueprintEnvelope Make(const FSignalPayload& InPayload, const FSignalContext& InContext);
+	bool TryExtract(const FProperty* InProperty, void* OutValueAddress) const;
+
+private:
+	FSignalPayload Payload;
+};
+
 enum class ESignalValueBuildResult : uint8
 {
 	Success,

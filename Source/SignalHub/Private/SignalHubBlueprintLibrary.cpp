@@ -65,6 +65,23 @@ DEFINE_FUNCTION(USignalHubBlueprintLibrary::execMakeSignalKeyWildcard)
 	P_NATIVE_END;
 }
 
+bool USignalHubBlueprintLibrary::TryExtractSignalPayload(const FSignalBlueprintEnvelope& InEnvelope, int32& OutPayload)
+{
+	return false;
+}
+
+DEFINE_FUNCTION(USignalHubBlueprintLibrary::execTryExtractSignalPayload)
+{
+	P_GET_STRUCT_REF(FSignalBlueprintEnvelope, envelope);
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* property = Stack.MostRecentProperty;
+	void* address = Stack.MostRecentPropertyAddress;
+	P_FINISH;
+	P_NATIVE_BEGIN;
+	*(bool*)RESULT_PARAM = envelope.TryExtract(property, address);
+	P_NATIVE_END;
+}
+
 USignalHubSubsystem* USignalHubBlueprintLibrary::ResolveHub(const UObject* WorldContextObject)
 {
 	if (!WorldContextObject || !GEngine) return nullptr;

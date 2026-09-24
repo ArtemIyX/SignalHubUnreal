@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "SignalKey.h"
+#include "SignalHubBlueprintTypes.h"
 #include "SignalHubBlueprintLibrary.generated.h"
 
 class USignalHubSubsystem;
@@ -29,6 +30,10 @@ public:
 	UFUNCTION(BlueprintPure, CustomThunk, Category = "Signal Hub|Key", meta = (BlueprintInternalUseOnly = "true", CustomStructureParam = "Value"))
 	static FSignalKey MakeSignalKeyWildcard(const int32& InValue);
 	DECLARE_FUNCTION(execMakeSignalKeyWildcard);
+
+	UFUNCTION(BlueprintCallable, CustomThunk, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", CustomStructureParam = "OutPayload"))
+	static bool TryExtractSignalPayload(const FSignalBlueprintEnvelope& InEnvelope, int32& OutPayload);
+	DECLARE_FUNCTION(execTryExtractSignalPayload);
 
 	static USignalHubSubsystem* ResolveHub(const UObject* WorldContextObject);
 };
