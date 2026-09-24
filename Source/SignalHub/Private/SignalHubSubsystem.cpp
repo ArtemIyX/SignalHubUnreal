@@ -164,6 +164,20 @@ bool USignalHubSubsystem::IsBound(const FSignalKey& InKey) const
 	return channel && !channel->Listeners.IsEmpty();
 }
 
+FSignalHubDiagnostics USignalHubSubsystem::GetDiagnostics() const
+{
+	FSignalHubDiagnostics result;
+	if (!Impl) return result;
+	FScopeLock lock(&Impl->Lock);
+	result.ActiveChannels = Impl->Channels.Num();
+	result.PendingSignals = Impl->Pending.Num();
+	for (const TPair<FSignalKey, FImpl::FChannel>& pair : Impl->Channels)
+	{
+		result.ActiveListeners += pair.Value.Listeners.Num();
+	}
+	return result;
+}
+
 bool USignalHubSubsystem::Tick(float InDeltaTime)
 {
 	if (!Impl || !bAcceptingPublishes.Load()) return true;

@@ -19,5 +19,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Signal Hub", meta = (WorldContext = "WorldContextObject", ToolTip = "Returns whether the exact name key has a current listener in this game instance."))
 	static bool IsNameSignalBound(const UObject* WorldContextObject, FName InKey);
 
+	UFUNCTION(BlueprintPure, Category = "Signal Hub|Diagnostics", meta = (WorldContext = "WorldContextObject", ToolTip = "Returns a read-only snapshot for this game instance."))
+	static FSignalHubDiagnostics GetSignalHubDiagnostics(const UObject* WorldContextObject);
+
 	static USignalHubSubsystem* ResolveHub(const UObject* WorldContextObject);
 };

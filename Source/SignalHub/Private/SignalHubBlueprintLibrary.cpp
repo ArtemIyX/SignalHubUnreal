@@ -15,6 +15,12 @@ bool USignalHubBlueprintLibrary::IsNameSignalBound(const UObject* WorldContextOb
 	return false;
 }
 
+FSignalHubDiagnostics USignalHubBlueprintLibrary::GetSignalHubDiagnostics(const UObject* WorldContextObject)
+{
+	if (USignalHubSubsystem* hub = ResolveHub(WorldContextObject)) return hub->GetDiagnostics();
+	return {};
+}
+
 USignalHubSubsystem* USignalHubBlueprintLibrary::ResolveHub(const UObject* WorldContextObject)
 {
 	if (!WorldContextObject || !GEngine) return nullptr;

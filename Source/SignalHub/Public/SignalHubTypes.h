@@ -62,4 +62,19 @@ struct SIGNALHUB_API FSignalContext
 	int32 CascadeDepth = 0;
 };
 
+USTRUCT(BlueprintType)
+struct SIGNALHUB_API FSignalHubDiagnostics
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics", meta = (ToolTip = "Current exact-key channels in this game instance."))
+	int32 ActiveChannels = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics", meta = (ToolTip = "Current listener bindings in this game instance."))
+	int32 ActiveListeners = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics", meta = (ToolTip = "Worker-thread signals pending game-thread delivery."))
+	int32 PendingSignals = 0;
+};
+
 DECLARE_LOG_CATEGORY_EXTERN(LogSignalHub, Log, All);

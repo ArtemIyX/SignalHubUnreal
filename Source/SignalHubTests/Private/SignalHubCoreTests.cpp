@@ -63,6 +63,17 @@ bool FSignalHubReflectedPayloadTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubDiagnosticsDefaultTest, "SignalHub.Unit.Diagnostics.EmptySnapshot", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubDiagnosticsDefaultTest::RunTest(const FString& InParameters)
+{
+	const FSignalHubDiagnostics diagnostics;
+	TestEqual(TEXT("Default channel count"), diagnostics.ActiveChannels, 0);
+	TestEqual(TEXT("Default listener count"), diagnostics.ActiveListeners, 0);
+	TestEqual(TEXT("Default pending count"), diagnostics.PendingSignals, 0);
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubPayloadIsolationTest, "SignalHub.Unit.Payload.SourceMutation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FSignalHubPayloadIsolationTest::RunTest(const FString& InParameters)
