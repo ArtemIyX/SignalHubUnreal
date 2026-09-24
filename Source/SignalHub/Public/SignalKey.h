@@ -2,11 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "Misc/Crc.h"
+#include "StructUtils/InstancedStruct.h"
 #include "SignalHubTypes.h"
 #include <type_traits>
 #include "SignalKey.generated.h"
 
 enum class ESignalTypeDomain : uint8 { BuiltIn, Native };
+
+struct FSignalKey;
+SIGNALHUB_API FSignalKey MakeSignalStructKey(const UScriptStruct* InStruct, const void* InValue);
 
 struct SIGNALHUB_API FSignalTypeId
 {
@@ -30,6 +34,22 @@ public:
 	virtual uint32 GetValueHash() const = 0;
 	virtual bool Equals(const ISignalKeyStorage& InOther) const = 0;
 	virtual FString Describe() const = 0;
+};
+
+class SIGNALHUB_API FSignalReflectedStructKeyStorage final : public ISignalKeyStorage
+{
+public:
+	FSignalReflectedStructKeyStorage(const UScriptStruct* InStruct, const void* InValue);
+	virtual const FSignalTypeId& GetTypeId() const override { return TypeId; }
+	virtual uint32 GetValueHash() const override { return ValueHash; }
+	virtual bool Equals(const ISignalKeyStorage& InOther) const override;
+	virtual FString Describe() const override;
+
+private:
+	const UScriptStruct* ScriptStruct = nullptr;
+	FInstancedStruct Value;
+	FSignalTypeId TypeId;
+	uint32 ValueHash = 0;
 };
 
 inline uint32 SignalHubGetValueHash(const FName& InValue)
@@ -95,6 +115,7 @@ struct SIGNALHUB_API FSignalKey
 
 private:
 	template <typename TKey> friend FSignalKey MakeSignalKey(TKey&& InKey);
+	friend SIGNALHUB_API FSignalKey MakeSignalStructKey(const UScriptStruct* InStruct, const void* InValue);
 	TSharedPtr<const ISignalKeyStorage, ESPMode::ThreadSafe> Storage;
 };
 

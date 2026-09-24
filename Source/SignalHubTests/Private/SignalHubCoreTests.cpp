@@ -30,6 +30,24 @@ bool FSignalHubDefaultLimitsTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubReflectedStructKeyTest, "SignalHub.Unit.Key.NativeStructCppThunkParity", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubReflectedStructKeyTest::RunTest(const FString& InParameters)
+{
+	const FVector firstValue(1.0, 2.0, 3.0);
+	const FVector sameValue(1.0, 2.0, 3.0);
+	const FVector differentValue(3.0, 2.0, 1.0);
+	const UScriptStruct* vectorStruct = TBaseStructure<FVector>::Get();
+	const FSignalKey first = MakeSignalStructKey(vectorStruct, &firstValue);
+	const FSignalKey same = MakeSignalStructKey(vectorStruct, &sameValue);
+	const FSignalKey different = MakeSignalStructKey(vectorStruct, &differentValue);
+	TestTrue(TEXT("Reflected key is valid"), first.IsValid());
+	TestTrue(TEXT("Equal reflected values compare equal"), first == same);
+	TestEqual(TEXT("Equal reflected values hash equally"), GetTypeHash(first), GetTypeHash(same));
+	TestFalse(TEXT("Different reflected values do not compare equal"), first == different);
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubPayloadIsolationTest, "SignalHub.Unit.Payload.SourceMutation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FSignalHubPayloadIsolationTest::RunTest(const FString& InParameters)
