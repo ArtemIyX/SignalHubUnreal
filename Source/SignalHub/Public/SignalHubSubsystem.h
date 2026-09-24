@@ -48,6 +48,13 @@ public:
 		return Subscribe<TPayload>(Forward<TKey>(InKey), InObject, [InObject, InCallback](const TPayload& payload, const FSignalContext& context) { (InObject->*InCallback)(payload, context); });
 	}
 
+	template <typename TPayload, typename TKey, typename TObject>
+	FSignalSubscribeOutcome Subscribe(TKey&& InKey, TObject* InObject, void (TObject::*InCallback)(const FSignalContext&, const TPayload&))
+	{
+		if (!InObject || !InCallback) return { ESignalSubscribeResult::InvalidCallback, {} };
+		return Subscribe<TPayload>(Forward<TKey>(InKey), InObject, [InObject, InCallback](const TPayload& payload, const FSignalContext& context) { (InObject->*InCallback)(context, payload); });
+	}
+
 	template <typename TPayload>
 	ESignalPublishResult Publish(const FSignalKey& InKey, const TPayload& InPayload)
 	{
