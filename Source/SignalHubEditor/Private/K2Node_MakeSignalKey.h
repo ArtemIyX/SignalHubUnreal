@@ -10,6 +10,7 @@ class SIGNALHUBEDITOR_API UK2Node_MakeSignalKey final : public UK2Node
 
 public:
 	virtual void AllocateDefaultPins() override;
+	virtual bool IsNodePure() const override { return true; }
 	virtual FText GetNodeTitle(ENodeTitleType::Type InTitleType) const override;
 	virtual FText GetTooltipText() const override;
 	virtual FText GetMenuCategory() const override;
