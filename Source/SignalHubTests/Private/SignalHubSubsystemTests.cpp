@@ -67,4 +67,22 @@ bool FSignalHubSchemaTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubReentrantTest, "SignalHub.Unit.Reentry.SameKeyDeferred", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubReentrantTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	TArray<int32> order;
+	const FName key(TEXT("Unit.Reentry"));
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&fixture, &order, key](const int32 value, const FSignalContext&)
+	{
+		order.Add(value);
+		if (value == 1) fixture.Hub->Publish(key, 2);
+	});
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&order](const int32 value, const FSignalContext&) { order.Add(value * 10); });
+	TestEqual(TEXT("Root publication completes"), fixture.Hub->Publish(key, 1), ESignalPublishResult::Delivered);
+	TestEqual(TEXT("Nested publish waits for root fanout"), order, TArray<int32>({ 1, 10, 2, 20 }));
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS
