@@ -135,7 +135,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubUnsubscribeAllTest, "SignalHub.Unit.S
 bool FSignalHubUnsubscribeAllTest::RunTest(const FString& InParameters)
 {
 	FSignalHubFixture fixture;
-	UObject* owner = NewObject<UObject>(fixture.GameInstance);
+	UObject* owner = fixture.GameInstance;
 	fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Owner.A")), owner, [](const int32, const FSignalContext&) {});
 	fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Owner.B")), owner, [](const int32, const FSignalContext&) {});
 	fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Owner.C")), nullptr, [](const int32, const FSignalContext&) {});
