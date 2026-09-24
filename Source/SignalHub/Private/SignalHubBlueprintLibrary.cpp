@@ -3,6 +3,7 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 #include "SignalHubSubsystem.h"
+#include "SignalHubSubscriptionProxy.h"
 #include "SignalHubBlueprintTypes.h"
 #include "UObject/Stack.h"
 #include "UObject/UnrealType.h"
@@ -22,6 +23,11 @@ FSignalHubDiagnostics USignalHubBlueprintLibrary::GetSignalHubDiagnostics(const 
 {
 	if (USignalHubSubsystem* hub = ResolveHub(WorldContextObject)) return hub->GetDiagnostics();
 	return {};
+}
+
+bool USignalHubBlueprintLibrary::StopListeningForSignal(USignalHubSubscription* InSubscription)
+{
+	return InSubscription ? InSubscription->Cancel() : false;
 }
 
 ESignalPublishResult USignalHubBlueprintLibrary::PublishSignalWildcard(const UObject* WorldContextObject, const int32& InKey, const int32& InPayload)
