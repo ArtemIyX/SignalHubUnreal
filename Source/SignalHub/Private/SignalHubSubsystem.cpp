@@ -233,6 +233,11 @@ ESignalPublishResult USignalHubSubsystem::PublishPayload(const FSignalKey& InKey
 	return PublishBoxed(InKey, InPayload);
 }
 
+FSignalSubscribeOutcome USignalHubSubsystem::SubscribePayload(const FSignalKey& InKey, const FSignalTypeId& InPayloadType, UObject* InOwner, TFunction<void(const FSignalPayload&, const FSignalContext&)>&& InCallback)
+{
+	return SubscribeBoxed(InKey, InPayloadType, InOwner, MoveTemp(InCallback));
+}
+
 FSignalHubDiagnostics USignalHubSubsystem::GetDiagnostics() const
 {
 	FSignalHubDiagnostics result;

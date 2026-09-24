@@ -85,6 +85,7 @@ public:
 	bool IsBound(const FSignalKey& InKey) const;
 	bool IsAcceptingPublishes() const { return bAcceptingPublishes.Load(); }
 	ESignalPublishResult PublishPayload(const FSignalKey& InKey, const FSignalPayload& InPayload);
+	FSignalSubscribeOutcome SubscribePayload(const FSignalKey& InKey, const FSignalTypeId& InPayloadType, UObject* InOwner, TFunction<void(const FSignalPayload&, const FSignalContext&)>&& InCallback);
 	FSignalHubLimits GetLimits() const { return Limits; }
 	FSignalHubDiagnostics GetDiagnostics() const;
 	void FlushPendingSignals();
