@@ -4,14 +4,6 @@
 
 #include <cmath>
 
-namespace
-{
-template <typename TValue>
-FSignalKeyBuildResult MakeKeyResult(const TValue& InValue)
-{
-	return { ESignalValueBuildResult::Success, MakeSignalKey(InValue), {} };
-}
-
 FSignalBlueprintEnvelope FSignalBlueprintEnvelope::Make(const FSignalPayload& InPayload, const FSignalContext& InContext)
 {
 	FSignalBlueprintEnvelope result;
@@ -23,6 +15,14 @@ FSignalBlueprintEnvelope FSignalBlueprintEnvelope::Make(const FSignalPayload& In
 bool FSignalBlueprintEnvelope::TryExtract(const FProperty* InProperty, void* OutValueAddress) const
 {
 	return ExtractSignalPayload(Payload, InProperty, OutValueAddress);
+}
+
+namespace
+{
+template <typename TValue>
+FSignalKeyBuildResult MakeKeyResult(const TValue& InValue)
+{
+	return { ESignalValueBuildResult::Success, MakeSignalKey(InValue), {} };
 }
 
 template <typename TValue>

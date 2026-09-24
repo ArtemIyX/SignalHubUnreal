@@ -4,7 +4,7 @@
 #include "SignalKey.h"
 #include "SignalPayload.h"
 #include "SignalHubBlueprintTypes.generated.h"
-#include "SingalHubBlueprintTypes.generated.h"
+
 
 class FProperty;
 
