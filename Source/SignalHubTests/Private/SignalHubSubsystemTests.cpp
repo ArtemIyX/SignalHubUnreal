@@ -114,4 +114,19 @@ bool FSignalHubSubscriptionProxyTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubStaleGenerationTest, "SignalHub.Unit.Subscribe.StaleGeneration", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubStaleGenerationTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FName key(TEXT("Unit.Generation"));
+	const FSignalSubscribeOutcome first = fixture.Hub->Subscribe<int32>(key, nullptr, [](const int32, const FSignalContext&) {});
+	fixture.Hub->Unsubscribe(first.Handle);
+	const FSignalSubscribeOutcome replacement = fixture.Hub->Subscribe<int32>(key, nullptr, [](const int32, const FSignalContext&) {});
+	TestNotEqual(TEXT("Recreated channel gets a new generation"), first.Handle.Generation, replacement.Handle.Generation);
+	TestFalse(TEXT("Old handle cannot remove replacement"), fixture.Hub->Unsubscribe(first.Handle));
+	TestTrue(TEXT("Replacement remains active"), fixture.Hub->IsBound(MakeSignalKey(key)));
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS

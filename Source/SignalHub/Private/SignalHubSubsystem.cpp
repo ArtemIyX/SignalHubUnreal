@@ -34,6 +34,7 @@ struct USignalHubSubsystem::FImpl
 	TArray<FQueuedSignal> Pending;
 	TArray<FQueuedSignal> Reentrant;
 	uint64 NextSubscriptionId = 1;
+	uint32 NextChannelGeneration = 1;
 	uint64 NextSequence = 1;
 };
 
@@ -75,17 +76,20 @@ FSignalSubscribeOutcome USignalHubSubsystem::SubscribeBoxed(const FSignalKey& In
 	if (!InCallback) return { ESignalSubscribeResult::InvalidCallback, {} };
 
 	FScopeLock lock(&Impl->Lock);
-	FImpl::FChannel& channel = Impl->Channels.FindOrAdd(InKey);
-	if (channel.Listeners.Num() == 0)
+	FImpl::FChannel* channel = Impl->Channels.Find(InKey);
+	if (!channel)
 	{
-		channel.PayloadType = InPayloadType;
+		FImpl::FChannel created;
+		created.PayloadType = InPayloadType;
+		created.Generation = Impl->NextChannelGeneration++;
+		channel = &Impl->Channels.Add(InKey, MoveTemp(created));
 	}
-	else if (channel.PayloadType != InPayloadType)
+	else if (channel->PayloadType != InPayloadType)
 	{
 		return { ESignalSubscribeResult::PayloadTypeMismatch, {} };
 	}
-	const FSignalSubscriptionHandle handle { Impl->NextSubscriptionId++, channel.Generation };
-	channel.Listeners.Add({ handle.Id, InOwner != nullptr, InOwner, MoveTemp(InCallback) });
+	const FSignalSubscriptionHandle handle { Impl->NextSubscriptionId++, static_cast<int32>(channel->Generation) };
+	channel->Listeners.Add({ handle.Id, InOwner != nullptr, InOwner, MoveTemp(InCallback) });
 	return { ESignalSubscribeResult::Bound, handle };
 }
 
