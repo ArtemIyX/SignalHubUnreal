@@ -20,6 +20,7 @@ public:
 	virtual ~USignalHubSubsystem() override;
 	virtual void Initialize(FSubsystemCollectionBase& InCollection) override;
 	virtual void Deinitialize() override;
+	static void AddReferencedObjects(UObject* InThis, FReferenceCollector& InCollector);
 
 	template <typename TPayload, typename TCallback>
 	FSignalSubscribeOutcome Subscribe(const FSignalKey& InKey, UObject* InOwner, TCallback&& InCallback)

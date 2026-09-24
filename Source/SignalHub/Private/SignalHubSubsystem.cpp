@@ -53,9 +53,23 @@ struct USignalHubSubsystem::FImpl
 			if (it.Value().Listeners.IsEmpty()) it.RemoveCurrent();
 		}
 	}
+
+	void AddReferencedObjects(FReferenceCollector& InCollector)
+	{
+		FScopeLock lock(&Lock);
+		for (const FQueuedSignal& signal : Pending) signal.Payload.AddReferencedObjects(InCollector);
+		for (const FQueuedSignal& signal : Reentrant) signal.Payload.AddReferencedObjects(InCollector);
+	}
 };
 
 USignalHubSubsystem::~USignalHubSubsystem() = default;
+
+void USignalHubSubsystem::AddReferencedObjects(UObject* InThis, FReferenceCollector& InCollector)
+{
+	USignalHubSubsystem* hub = CastChecked<USignalHubSubsystem>(InThis);
+	if (hub->Impl) hub->Impl->AddReferencedObjects(InCollector);
+	Super::AddReferencedObjects(InThis, InCollector);
+}
 
 void USignalHubSubsystem::Initialize(FSubsystemCollectionBase& InCollection)
 {

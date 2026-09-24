@@ -1,6 +1,7 @@
 #include "SignalPayload.h"
 
 #include "UObject/Class.h"
+#include "UObject/ReferenceCollector.h"
 
 FSignalReflectedStructPayloadStorage::FSignalReflectedStructPayloadStorage(const UScriptStruct* InStruct, const void* InValue)
 	: TypeId({ ESignalTypeDomain::BuiltIn, InStruct ? InStruct->GetFName() : NAME_None, InStruct ? FName(InStruct->GetPathName()) : NAME_None })
@@ -17,4 +18,9 @@ FSignalPayload MakeSignalStructPayload(const UScriptStruct* InStruct, const void
 	FSignalPayload result;
 	result.Storage = MakeShared<FSignalReflectedStructPayloadStorage, ESPMode::ThreadSafe>(InStruct, InValue);
 	return result;
+}
+
+void FSignalReflectedStructPayloadStorage::AddReferencedObjects(FReferenceCollector& InCollector) const
+{
+	const_cast<FInstancedStruct&>(Value).AddStructReferencedObjects(InCollector);
 }
