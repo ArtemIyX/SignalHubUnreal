@@ -74,45 +74,45 @@ FSignalPayloadBuildResult BuildSignalPayload(const FProperty* InProperty, const 
 bool ExtractSignalPayload(const FSignalPayload& InPayload, const FProperty* InProperty, void* OutValueAddress)
 {
 	if (!InProperty || !OutValueAddress) return false;
-	if (const FNameProperty* property = CastField<FNameProperty>(InProperty))
+	if (const FNameProperty* nameProperty = CastField<FNameProperty>(InProperty))
 	{
-		if (const FName* value = InPayload.TryGet<FName>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const FName* value = InPayload.TryGet<FName>()) { nameProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FStrProperty* property = CastField<FStrProperty>(InProperty))
+	else if (const FStrProperty* stringProperty = CastField<FStrProperty>(InProperty))
 	{
-		if (const FString* value = InPayload.TryGet<FString>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const FString* value = InPayload.TryGet<FString>()) { stringProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FBoolProperty* property = CastField<FBoolProperty>(InProperty))
+	else if (const FBoolProperty* boolProperty = CastField<FBoolProperty>(InProperty))
 	{
-		if (const bool* value = InPayload.TryGet<bool>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const bool* value = InPayload.TryGet<bool>()) { boolProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FByteProperty* property = CastField<FByteProperty>(InProperty))
+	else if (const FByteProperty* byteProperty = CastField<FByteProperty>(InProperty))
 	{
-		if (const uint8* value = InPayload.TryGet<uint8>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const uint8* value = InPayload.TryGet<uint8>()) { byteProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FIntProperty* property = CastField<FIntProperty>(InProperty))
+	else if (const FIntProperty* intProperty = CastField<FIntProperty>(InProperty))
 	{
-		if (const int32* value = InPayload.TryGet<int32>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const int32* value = InPayload.TryGet<int32>()) { intProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FInt64Property* property = CastField<FInt64Property>(InProperty))
+	else if (const FInt64Property* int64Property = CastField<FInt64Property>(InProperty))
 	{
-		if (const int64* value = InPayload.TryGet<int64>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const int64* value = InPayload.TryGet<int64>()) { int64Property->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FUInt32Property* property = CastField<FUInt32Property>(InProperty))
+	else if (const FUInt32Property* uint32Property = CastField<FUInt32Property>(InProperty))
 	{
-		if (const uint32* value = InPayload.TryGet<uint32>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const uint32* value = InPayload.TryGet<uint32>()) { uint32Property->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FFloatProperty* property = CastField<FFloatProperty>(InProperty))
+	else if (const FFloatProperty* floatProperty = CastField<FFloatProperty>(InProperty))
 	{
-		if (const float* value = InPayload.TryGet<float>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const float* value = InPayload.TryGet<float>()) { floatProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FDoubleProperty* property = CastField<FDoubleProperty>(InProperty))
+	else if (const FDoubleProperty* doubleProperty = CastField<FDoubleProperty>(InProperty))
 	{
-		if (const double* value = InPayload.TryGet<double>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+		if (const double* value = InPayload.TryGet<double>()) { doubleProperty->SetPropertyValue(OutValueAddress, *value); return true; }
 	}
-	else if (const FStructProperty* property = CastField<FStructProperty>(InProperty))
+	else if (const FStructProperty* structProperty = CastField<FStructProperty>(InProperty))
 	{
-		if (const void* value = InPayload.TryGetStruct(property->Struct)) { property->Struct->CopyScriptStruct(OutValueAddress, value); return true; }
+		if (const void* value = InPayload.TryGetStruct(structProperty->Struct)) { structProperty->Struct->CopyScriptStruct(OutValueAddress, value); return true; }
 	}
 	return false;
 }
