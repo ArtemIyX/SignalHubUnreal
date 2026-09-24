@@ -33,3 +33,9 @@ void USignalHubSubscription::Invalidate()
 	Hub.Reset();
 	SetReadyToDestroy();
 }
+
+void USignalHubSubscription::Deliver(const FSignalPayload& InPayload, const FSignalContext& InContext)
+{
+	if (!IsActive()) return;
+	OnSignal.Broadcast(FSignalBlueprintEnvelope::Make(InPayload, InContext));
+}
