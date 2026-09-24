@@ -45,6 +45,7 @@ struct USignalHubSubsystem::FImpl
 	int32 CascadeRejections = 0;
 	int32 PeakQueueDepth = 0;
 	int32 PeakCascadeDepth = 0;
+	bool bQueueOverflowLogged = false;
 
 	void PruneExpiredOwners()
 	{
@@ -159,6 +160,11 @@ ESignalPublishResult USignalHubSubsystem::PublishBoxed(const FSignalKey& InKey, 
 			if (Impl->Pending.Num() >= Limits.MaxQueuedSignals)
 			{
 				++Impl->QueueOverflows;
+				if (!Impl->bQueueOverflowLogged)
+				{
+					Impl->bQueueOverflowLogged = true;
+					UE_LOGFMT(LogSignalHub, Warning, "SignalHub worker queue reached its capacity of {Capacity}; subsequent worker publications are rejected until it drains.", Limits.MaxQueuedSignals);
+				}
 				return ESignalPublishResult::QueueFull;
 			}
 			Impl->Pending.Add({ InKey, InPayload, sequence, 0, channelGeneration, listenerSerialCutoff });
