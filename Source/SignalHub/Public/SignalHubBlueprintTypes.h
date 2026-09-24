@@ -6,6 +6,36 @@
 
 class FProperty;
 
+UENUM(BlueprintType)
+enum class ESignalBlueprintValueKind : uint8
+{
+	Invalid,
+	Bool,
+	Byte,
+	Int32,
+	Int64,
+	UInt32,
+	Float,
+	Double,
+	Name,
+	String,
+	Struct
+};
+
+USTRUCT(BlueprintType)
+struct SIGNALHUB_API FSignalBlueprintType
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Hub")
+	ESignalBlueprintValueKind Kind = ESignalBlueprintValueKind::Invalid;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Hub")
+	TObjectPtr<UScriptStruct> StructType = nullptr;
+
+	bool IsValid() const { return Kind != ESignalBlueprintValueKind::Invalid && (Kind != ESignalBlueprintValueKind::Struct || StructType != nullptr); }
+};
+
 USTRUCT(BlueprintType)
 struct SIGNALHUB_API FSignalBlueprintEnvelope
 {
