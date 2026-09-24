@@ -2,6 +2,8 @@
 
 #include "UObject/UnrealType.h"
 
+#include <cmath>
+
 namespace
 {
 template <typename TValue>
@@ -26,8 +28,20 @@ FSignalKeyBuildResult BuildSignalKey(const FProperty* InProperty, const void* In
 	if (const FIntProperty* property = CastField<FIntProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FInt64Property* property = CastField<FInt64Property>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
 	if (const FUInt32Property* property = CastField<FUInt32Property>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
-	if (const FFloatProperty* property = CastField<FFloatProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
-	if (const FDoubleProperty* property = CastField<FDoubleProperty>(InProperty)) return MakeKeyResult(property->GetPropertyValue(InValueAddress));
+	if (const FFloatProperty* property = CastField<FFloatProperty>(InProperty))
+	{
+		float value = property->GetPropertyValue(InValueAddress);
+		if (!FMath::IsFinite(value)) return { ESignalValueBuildResult::InvalidValue, {}, TEXT("SignalHub keys cannot contain NaN or infinity.") };
+		if (value == 0.0f) value = 0.0f;
+		return MakeKeyResult(value);
+	}
+	if (const FDoubleProperty* property = CastField<FDoubleProperty>(InProperty))
+	{
+		double value = property->GetPropertyValue(InValueAddress);
+		if (!FMath::IsFinite(value)) return { ESignalValueBuildResult::InvalidValue, {}, TEXT("SignalHub keys cannot contain NaN or infinity.") };
+		if (value == 0.0) value = 0.0;
+		return MakeKeyResult(value);
+	}
 	if (const FStructProperty* property = CastField<FStructProperty>(InProperty))
 	{
 		FSignalKey key = MakeSignalStructKey(property->Struct, InValueAddress);
