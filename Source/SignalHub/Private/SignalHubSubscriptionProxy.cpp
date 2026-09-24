@@ -17,7 +17,7 @@ bool USignalHubSubscription::Cancel()
 
 bool USignalHubSubscription::IsActive() const
 {
-	return Handle.IsValid() && Hub.IsValid();
+	return Handle.IsValid() && Hub.IsValid() && Hub->IsAcceptingPublishes();
 }
 
 void USignalHubSubscription::Initialize(USignalHubSubsystem* InHub, FSignalSubscriptionHandle InHandle)
