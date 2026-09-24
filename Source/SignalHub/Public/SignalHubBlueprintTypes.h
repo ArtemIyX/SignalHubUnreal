@@ -33,3 +33,4 @@ struct SIGNALHUB_API FSignalPayloadBuildResult
 
 SIGNALHUB_API FSignalKeyBuildResult BuildSignalKey(const FProperty* InProperty, const void* InValueAddress);
 SIGNALHUB_API FSignalPayloadBuildResult BuildSignalPayload(const FProperty* InProperty, const void* InValueAddress);
+SIGNALHUB_API bool ExtractSignalPayload(const FSignalPayload& InPayload, const FProperty* InProperty, void* OutValueAddress);

@@ -70,3 +70,45 @@ FSignalPayloadBuildResult BuildSignalPayload(const FProperty* InProperty, const 
 	}
 	return { ESignalValueBuildResult::UnsupportedType, {}, FString::Printf(TEXT("Unsupported SignalHub payload property '%s'."), *InProperty->GetClass()->GetName()) };
 }
+
+bool ExtractSignalPayload(const FSignalPayload& InPayload, const FProperty* InProperty, void* OutValueAddress)
+{
+	if (!InProperty || !OutValueAddress) return false;
+	if (const FNameProperty* property = CastField<FNameProperty>(InProperty))
+	{
+		if (const FName* value = InPayload.TryGet<FName>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FStrProperty* property = CastField<FStrProperty>(InProperty))
+	{
+		if (const FString* value = InPayload.TryGet<FString>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FBoolProperty* property = CastField<FBoolProperty>(InProperty))
+	{
+		if (const bool* value = InPayload.TryGet<bool>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FIntProperty* property = CastField<FIntProperty>(InProperty))
+	{
+		if (const int32* value = InPayload.TryGet<int32>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FInt64Property* property = CastField<FInt64Property>(InProperty))
+	{
+		if (const int64* value = InPayload.TryGet<int64>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FUInt32Property* property = CastField<FUInt32Property>(InProperty))
+	{
+		if (const uint32* value = InPayload.TryGet<uint32>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FFloatProperty* property = CastField<FFloatProperty>(InProperty))
+	{
+		if (const float* value = InPayload.TryGet<float>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FDoubleProperty* property = CastField<FDoubleProperty>(InProperty))
+	{
+		if (const double* value = InPayload.TryGet<double>()) { property->SetPropertyValue(OutValueAddress, *value); return true; }
+	}
+	else if (const FStructProperty* property = CastField<FStructProperty>(InProperty))
+	{
+		if (const void* value = InPayload.TryGetStruct(property->Struct)) { property->Struct->CopyScriptStruct(OutValueAddress, value); return true; }
+	}
+	return false;
+}
