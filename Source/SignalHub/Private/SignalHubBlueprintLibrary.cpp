@@ -43,7 +43,9 @@ DEFINE_FUNCTION(USignalHubBlueprintLibrary::execPublishSignalWildcard)
 	const FSignalKeyBuildResult key = BuildSignalKey(keyProperty, keyAddress);
 	const FSignalPayloadBuildResult payload = BuildSignalPayload(payloadProperty, payloadAddress);
 	USignalHubSubsystem* hub = ResolveHub(worldContextObject);
-	*(ESignalPublishResult*)RESULT_PARAM = !key.IsSuccess() ? ESignalPublishResult::InvalidKey : !payload.IsSuccess() ? ESignalPublishResult::PayloadTypeMismatch : hub ? hub->PublishPayload(key.Key, payload.Payload) : ESignalPublishResult::InvalidWorldContext;
+	const ESignalPublishResult keyFailure = key.Result == ESignalValueBuildResult::UnsupportedType ? ESignalPublishResult::UnsupportedKeyType : ESignalPublishResult::InvalidKey;
+	const ESignalPublishResult payloadFailure = payload.Result == ESignalValueBuildResult::UnsupportedType ? ESignalPublishResult::UnsupportedPayloadType : ESignalPublishResult::InvalidPayloadType;
+	*(ESignalPublishResult*)RESULT_PARAM = !key.IsSuccess() ? keyFailure : !payload.IsSuccess() ? payloadFailure : hub ? hub->PublishPayload(key.Key, payload.Payload) : ESignalPublishResult::InvalidWorldContext;
 	P_NATIVE_END;
 }
 
