@@ -1,17 +1,19 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Kismet/BlueprintAsyncActionBase.h"
 #include "SignalSubscription.h"
 #include "SignalHubSubscriptionProxy.generated.h"
 
 class USignalHubSubsystem;
 
 UCLASS(BlueprintType)
-class SIGNALHUB_API USignalHubSubscription final : public UObject
+class SIGNALHUB_API USignalHubSubscription final : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
 
 public:
+	virtual void Activate() override;
 	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (ToolTip = "Stops this subscription. Safe to call repeatedly."))
 	bool Cancel();
 

@@ -2,6 +2,10 @@
 
 #include "SignalHubSubsystem.h"
 
+void USignalHubSubscription::Activate()
+{
+}
+
 bool USignalHubSubscription::Cancel()
 {
 	if (!Handle.IsValid()) return false;
@@ -20,10 +24,12 @@ void USignalHubSubscription::Initialize(USignalHubSubsystem* InHub, FSignalSubsc
 {
 	Hub = InHub;
 	Handle = InHandle;
+	if (InHub) RegisterWithGameInstance(InHub->GetGameInstance());
 }
 
 void USignalHubSubscription::Invalidate()
 {
 	Handle.Reset();
 	Hub.Reset();
+	SetReadyToDestroy();
 }
