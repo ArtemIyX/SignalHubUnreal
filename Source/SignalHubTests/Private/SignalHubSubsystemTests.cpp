@@ -144,4 +144,25 @@ bool FSignalHubUnsubscribeAllTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubAddDuringDispatchTest, "SignalHub.Unit.Publish.AddDuringDispatchSkipped", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubAddDuringDispatchTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FName key(TEXT("Unit.AddDuringDispatch"));
+	int32 originalCount = 0;
+	int32 lateCount = 0;
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&fixture, &key, &originalCount, &lateCount](const int32, const FSignalContext&)
+	{
+		++originalCount;
+		fixture.Hub->Subscribe<int32>(key, nullptr, [&lateCount](const int32, const FSignalContext&) { ++lateCount; });
+	});
+	fixture.Hub->Publish(key, 1);
+	TestEqual(TEXT("Original listener runs"), originalCount, 1);
+	TestEqual(TEXT("Late listener misses current signal"), lateCount, 0);
+	fixture.Hub->Publish(key, 2);
+	TestEqual(TEXT("Late listener receives a later signal"), lateCount, 1);
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS
