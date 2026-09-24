@@ -129,4 +129,19 @@ bool FSignalHubStaleGenerationTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubUnsubscribeAllTest, "SignalHub.Unit.Subscribe.UnsubscribeAllOwner", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubUnsubscribeAllTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	UObject* owner = NewObject<UObject>(fixture.GameInstance);
+	fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Owner.A")), owner, [](const int32, const FSignalContext&) {});
+	fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Owner.B")), owner, [](const int32, const FSignalContext&) {});
+	fixture.Hub->Subscribe<int32>(FName(TEXT("Unit.Owner.C")), nullptr, [](const int32, const FSignalContext&) {});
+	TestEqual(TEXT("All owner listeners are removed"), fixture.Hub->UnsubscribeAll(owner), 2);
+	TestFalse(TEXT("Owner key A is unbound"), fixture.Hub->IsBound(MakeSignalKey(FName(TEXT("Unit.Owner.A")))));
+	TestTrue(TEXT("Ownerless key remains bound"), fixture.Hub->IsBound(MakeSignalKey(FName(TEXT("Unit.Owner.C")))));
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS

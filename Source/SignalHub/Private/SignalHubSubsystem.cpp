@@ -151,15 +151,17 @@ bool USignalHubSubsystem::Unsubscribe(FSignalSubscriptionHandle InHandle)
 	return false;
 }
 
-void USignalHubSubsystem::UnsubscribeAll(UObject* InOwner)
+int32 USignalHubSubsystem::UnsubscribeAll(UObject* InOwner)
 {
-	if (!IsInGameThread() || !Impl || !InOwner) return;
+	if (!IsInGameThread() || !Impl || !InOwner) return 0;
+	int32 removed = 0;
 	FScopeLock lock(&Impl->Lock);
 	for (auto it = Impl->Channels.CreateIterator(); it; ++it)
 	{
-		it.Value().Listeners.RemoveAll([InOwner](const FImpl::FListener& listener) { return listener.Owner.Get() == InOwner; });
+		removed += it.Value().Listeners.RemoveAll([InOwner](const FImpl::FListener& listener) { return listener.bHasOwner && listener.Owner.Get() == InOwner; });
 		if (it.Value().Listeners.IsEmpty()) it.RemoveCurrent();
 	}
+	return removed;
 }
 
 bool USignalHubSubsystem::IsBound(const FSignalKey& InKey) const
