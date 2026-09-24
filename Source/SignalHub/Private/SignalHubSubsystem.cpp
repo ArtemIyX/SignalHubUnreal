@@ -1,4 +1,5 @@
 #include "SignalHubSubsystem.h"
+#include "SignalHubSettings.h"
 
 #include "Containers/Ticker.h"
 #include "Misc/ScopeLock.h"
@@ -41,6 +42,7 @@ USignalHubSubsystem::~USignalHubSubsystem() = default;
 void USignalHubSubsystem::Initialize(FSubsystemCollectionBase& InCollection)
 {
 	Super::Initialize(InCollection);
+	Limits = GetDefault<USignalHubSettings>()->Limits;
 	Limits.Clamp();
 	Impl = MakeShared<FImpl>();
 	bAcceptingPublishes.Store(true);
