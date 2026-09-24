@@ -75,6 +75,18 @@ struct SIGNALHUB_API FSignalHubDiagnostics
 
 	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics", meta = (ToolTip = "Worker-thread signals pending game-thread delivery."))
 	int32 PendingSignals = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics")
+	int32 QueueOverflows = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics")
+	int32 CascadeRejections = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics")
+	int32 PeakQueueDepth = 0;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Signal Hub|Diagnostics")
+	int32 PeakCascadeDepth = 0;
 };
 
 DECLARE_LOG_CATEGORY_EXTERN(LogSignalHub, Log, All);

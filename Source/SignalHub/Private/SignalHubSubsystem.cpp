@@ -40,6 +40,10 @@ struct USignalHubSubsystem::FImpl
 	uint64 NextSubscriptionId = 1;
 	uint32 NextChannelGeneration = 1;
 	uint64 NextSequence = 1;
+	int32 QueueOverflows = 0;
+	int32 CascadeRejections = 0;
+	int32 PeakQueueDepth = 0;
+	int32 PeakCascadeDepth = 0;
 
 	void PruneExpiredOwners()
 	{
@@ -137,15 +141,25 @@ ESignalPublishResult USignalHubSubsystem::PublishBoxed(const FSignalKey& InKey, 
 		if (!IsInGameThread())
 		{
 			if (!InPayload.IsWorkerCopySafe()) return ESignalPublishResult::WrongThreadForPayload;
-			if (Impl->Pending.Num() >= Limits.MaxQueuedSignals) return ESignalPublishResult::QueueFull;
+			if (Impl->Pending.Num() >= Limits.MaxQueuedSignals)
+			{
+				++Impl->QueueOverflows;
+				return ESignalPublishResult::QueueFull;
+			}
 			Impl->Pending.Add({ InKey, InPayload, sequence, 0, channelGeneration, listenerSerialCutoff });
+			Impl->PeakQueueDepth = FMath::Max(Impl->PeakQueueDepth, Impl->Pending.Num());
 			return ESignalPublishResult::Queued;
 		}
 	}
 	if (bDispatching)
 	{
 		const int32 depth = CurrentDispatchDepth + 1;
-		if (depth > Limits.MaxCascadeDepth) return ESignalPublishResult::CascadeLimit;
+		if (depth > Limits.MaxCascadeDepth)
+		{
+			FScopeLock lock(&Impl->Lock);
+			++Impl->CascadeRejections;
+			return ESignalPublishResult::CascadeLimit;
+		}
 		FScopeLock lock(&Impl->Lock);
 		Impl->Reentrant.Add({ InKey, InPayload, sequence, depth, channelGeneration, listenerSerialCutoff });
 		return ESignalPublishResult::QueuedReentrant;
@@ -201,6 +215,10 @@ FSignalHubDiagnostics USignalHubSubsystem::GetDiagnostics() const
 	Impl->PruneExpiredOwners();
 	result.ActiveChannels = Impl->Channels.Num();
 	result.PendingSignals = Impl->Pending.Num();
+	result.QueueOverflows = Impl->QueueOverflows;
+	result.CascadeRejections = Impl->CascadeRejections;
+	result.PeakQueueDepth = Impl->PeakQueueDepth;
+	result.PeakCascadeDepth = Impl->PeakCascadeDepth;
 	for (const TPair<FSignalKey, FImpl::FChannel>& pair : Impl->Channels)
 	{
 		result.ActiveListeners += pair.Value.Listeners.Num();
@@ -244,6 +262,10 @@ void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload
 		if (index >= Limits.MaxDispatchesPerRoot) break;
 		const FImpl::FQueuedSignal signal = Impl->Reentrant[index];
 		CurrentDispatchDepth = signal.Depth;
+		{
+			FScopeLock lock(&Impl->Lock);
+			Impl->PeakCascadeDepth = FMath::Max(Impl->PeakCascadeDepth, signal.Depth);
+		}
 		DispatchOne(signal.Key, signal.Payload, signal.Sequence, signal.Depth, signal.ChannelGeneration, signal.ListenerSerialCutoff);
 	}
 	Impl->Reentrant.Reset();
