@@ -48,6 +48,21 @@ bool FSignalHubReflectedStructKeyTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubReflectedPayloadTest, "SignalHub.Unit.Payload.StructCopy", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubReflectedPayloadTest::RunTest(const FString& InParameters)
+{
+	FVector source(1.0, 2.0, 3.0);
+	const UScriptStruct* vectorStruct = TBaseStructure<FVector>::Get();
+	const FSignalPayload payload = MakeSignalStructPayload(vectorStruct, &source);
+	source.X = 99.0;
+	const FVector* storedValue = static_cast<const FVector*>(payload.TryGetStruct(vectorStruct));
+	TestNotNull(TEXT("Reflected payload has matching struct storage"), storedValue);
+	TestEqual(TEXT("Reflected payload owns its source copy"), storedValue->X, 1.0);
+	TestFalse(TEXT("Reflected payload is not producer-thread safe by default"), payload.IsWorkerCopySafe());
+	return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubPayloadIsolationTest, "SignalHub.Unit.Payload.SourceMutation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FSignalHubPayloadIsolationTest::RunTest(const FString& InParameters)

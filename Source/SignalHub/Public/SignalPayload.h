@@ -3,12 +3,29 @@
 #include "CoreMinimal.h"
 #include "SignalKey.h"
 
+class FSignalPayload;
+SIGNALHUB_API FSignalPayload MakeSignalStructPayload(const UScriptStruct* InStruct, const void* InValue);
+
 class ISignalPayloadStorage
 {
 public:
 	virtual ~ISignalPayloadStorage() = default;
 	virtual const FSignalTypeId& GetTypeId() const = 0;
 	virtual bool IsWorkerCopySafe() const = 0;
+	virtual const void* GetReflectedStructMemory() const { return nullptr; }
+};
+
+class SIGNALHUB_API FSignalReflectedStructPayloadStorage final : public ISignalPayloadStorage
+{
+public:
+	FSignalReflectedStructPayloadStorage(const UScriptStruct* InStruct, const void* InValue);
+	virtual const FSignalTypeId& GetTypeId() const override { return TypeId; }
+	virtual bool IsWorkerCopySafe() const override { return false; }
+	virtual const void* GetReflectedStructMemory() const override { return Value.GetMemory(); }
+
+private:
+	FInstancedStruct Value;
+	FSignalTypeId TypeId;
 };
 
 template <typename TPayload>
@@ -38,6 +55,11 @@ public:
 	bool IsValid() const { return Storage.IsValid(); }
 	const FSignalTypeId* GetTypeId() const { return Storage.IsValid() ? &Storage->GetTypeId() : nullptr; }
 	bool IsWorkerCopySafe() const { return Storage.IsValid() && Storage->IsWorkerCopySafe(); }
+	const void* TryGetStruct(const UScriptStruct* InStruct) const
+	{
+		if (!Storage.IsValid() || !InStruct || Storage->GetTypeId().Name != InStruct->GetFName()) return nullptr;
+		return Storage->GetReflectedStructMemory();
+	}
 
 	template <typename TPayload>
 	const TPayload* TryGet() const
@@ -52,6 +74,7 @@ public:
 
 private:
 	template <typename TPayload> friend FSignalPayload MakeSignalPayload(const TPayload& InPayload);
+	friend SIGNALHUB_API FSignalPayload MakeSignalStructPayload(const UScriptStruct* InStruct, const void* InValue);
 	TSharedPtr<const ISignalPayloadStorage, ESPMode::ThreadSafe> Storage;
 };
 
