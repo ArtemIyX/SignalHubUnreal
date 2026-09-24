@@ -35,6 +35,19 @@ public:
 		return SubscribeBoxed(InKey, TSignalTypeTraits<FPayloadType>::Get(), InOwner, MoveTemp(callback));
 	}
 
+	template <typename TPayload, typename TKey, typename TCallback>
+	FSignalSubscribeOutcome Subscribe(TKey&& InKey, UObject* InOwner, TCallback&& InCallback)
+	{
+		return Subscribe<TPayload>(MakeSignalKey(Forward<TKey>(InKey)), InOwner, Forward<TCallback>(InCallback));
+	}
+
+	template <typename TPayload, typename TKey, typename TObject>
+	FSignalSubscribeOutcome Subscribe(TKey&& InKey, TObject* InObject, void (TObject::*InCallback)(const TPayload&, const FSignalContext&))
+	{
+		if (!InObject || !InCallback) return { ESignalSubscribeResult::InvalidCallback, {} };
+		return Subscribe<TPayload>(Forward<TKey>(InKey), InObject, [InObject, InCallback](const TPayload& payload, const FSignalContext& context) { (InObject->*InCallback)(payload, context); });
+	}
+
 	template <typename TPayload>
 	ESignalPublishResult Publish(const FSignalKey& InKey, const TPayload& InPayload)
 	{
@@ -44,6 +57,12 @@ public:
 			return ESignalPublishResult::NoListeners;
 		}
 		return PublishBoxed(InKey, MakeSignalPayload(InPayload));
+	}
+
+	template <typename TKey, typename TPayload>
+	ESignalPublishResult Publish(TKey&& InKey, const TPayload& InPayload)
+	{
+		return Publish(MakeSignalKey(Forward<TKey>(InKey)), InPayload);
 	}
 
 	bool Unsubscribe(FSignalSubscriptionHandle InHandle);
