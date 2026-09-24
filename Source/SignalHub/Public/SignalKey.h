@@ -32,6 +32,17 @@ public:
 	virtual FString Describe() const = 0;
 };
 
+inline uint32 SignalHubGetValueHash(const FName& InValue)
+{
+	return InValue.GetComparisonIndex().ToUnstableInt();
+}
+
+template <typename TValue>
+auto SignalHubGetValueHash(const TValue& InValue) -> decltype(GetTypeHash(InValue))
+{
+	return GetTypeHash(InValue);
+}
+
 template <typename TKey>
 struct TSignalTypeTraits
 {
@@ -45,8 +56,8 @@ template <typename TKey>
 class TSignalNativeKeyStorage final : public ISignalKeyStorage
 {
 public:
-	explicit TSignalNativeKeyStorage(TKey&& InValue) : Value(MoveTemp(InValue)), TypeId(TSignalTypeTraits<TKey>::Get()), ValueHash(::GetTypeHash(Value)) {}
-	explicit TSignalNativeKeyStorage(const TKey& InValue) : Value(InValue), TypeId(TSignalTypeTraits<TKey>::Get()), ValueHash(::GetTypeHash(Value)) {}
+	explicit TSignalNativeKeyStorage(TKey&& InValue) : Value(MoveTemp(InValue)), TypeId(TSignalTypeTraits<TKey>::Get()), ValueHash(SignalHubGetValueHash(Value)) {}
+	explicit TSignalNativeKeyStorage(const TKey& InValue) : Value(InValue), TypeId(TSignalTypeTraits<TKey>::Get()), ValueHash(SignalHubGetValueHash(Value)) {}
 
 	virtual const FSignalTypeId& GetTypeId() const override { return TypeId; }
 	virtual uint32 GetValueHash() const override { return ValueHash; }
