@@ -1,0 +1,48 @@
+#include "Misc/AutomationTest.h"
+#include "SignalHubTypes.h"
+#include "SignalKey.h"
+#include "SignalPayload.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubNativeKeyEqualityTest, "SignalHub.Unit.Key.NativeEquality", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubNativeKeyEqualityTest::RunTest(const FString& InParameters)
+{
+	const FSignalKey first = MakeSignalKey(int32(7));
+	const FSignalKey same = MakeSignalKey(int32(7));
+	const FSignalKey differentType = MakeSignalKey(uint32(7));
+	TestTrue(TEXT("Equal values with the same type compare equal"), first == same);
+	TestEqual(TEXT("Equal values with the same type hash equally"), GetTypeHash(first), GetTypeHash(same));
+	TestFalse(TEXT("Exact type is part of key identity"), first == differentType);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubPayloadIsolationTest, "SignalHub.Unit.Payload.SourceMutation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubPayloadIsolationTest::RunTest(const FString& InParameters)
+{
+	int32 value = 17;
+	const FSignalPayload payload = MakeSignalPayload(value);
+	value = 23;
+	const int32* storedValue = payload.TryGet<int32>();
+	TestNotNull(TEXT("Payload has its exact stored type"), storedValue);
+	TestEqual(TEXT("Payload owns a source copy"), *storedValue, 17);
+	TestNull(TEXT("Wrong payload access is rejected"), payload.TryGet<FString>());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubLimitsClampTest, "SignalHub.Unit.Config.InvalidLimitsClamped", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSignalHubLimitsClampTest::RunTest(const FString& InParameters)
+{
+	FSignalHubLimits limits;
+	limits.MaxQueuedSignals = 0;
+	limits.MaxSignalsPerTick = -1;
+	limits.MaxCascadeDepth = 0;
+	limits.MaxDispatchesPerRoot = 0;
+	limits.Clamp();
+	TestTrue(TEXT("Queue limit clamps positive"), limits.MaxQueuedSignals > 0);
+	TestTrue(TEXT("Tick limit clamps within queue limit"), limits.MaxSignalsPerTick > 0 && limits.MaxSignalsPerTick <= limits.MaxQueuedSignals);
+	TestTrue(TEXT("Cascade limit clamps positive"), limits.MaxCascadeDepth > 0);
+	TestTrue(TEXT("Dispatch limit clamps positive"), limits.MaxDispatchesPerRoot > 0);
+	return true;
+}
