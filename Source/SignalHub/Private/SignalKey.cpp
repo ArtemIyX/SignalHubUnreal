@@ -17,7 +17,7 @@ bool FSignalKey::operator==(const FSignalKey& InOther) const
 
 FSignalReflectedStructKeyStorage::FSignalReflectedStructKeyStorage(const UScriptStruct* InStruct, const void* InValue)
 	: ScriptStruct(InStruct)
-	, TypeId({ ESignalTypeDomain::BuiltIn, InStruct ? InStruct->GetFName() : NAME_None })
+	, TypeId({ ESignalTypeDomain::BuiltIn, InStruct ? InStruct->GetFName() : NAME_None, InStruct ? FName(InStruct->GetPathName()) : NAME_None })
 {
 	if (ScriptStruct && InValue)
 	{

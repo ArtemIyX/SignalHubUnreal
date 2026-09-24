@@ -16,14 +16,15 @@ struct SIGNALHUB_API FSignalTypeId
 {
 	ESignalTypeDomain Domain = ESignalTypeDomain::Native;
 	FName Name;
+	FName ReflectedPath;
 
-	bool operator==(const FSignalTypeId& InOther) const { return Domain == InOther.Domain && Name == InOther.Name; }
-	FString Describe() const { return Name.ToString(); }
+	bool operator==(const FSignalTypeId& InOther) const { return Domain == InOther.Domain && Name == InOther.Name && ReflectedPath == InOther.ReflectedPath; }
+	FString Describe() const { return ReflectedPath.IsNone() ? Name.ToString() : ReflectedPath.ToString(); }
 };
 
 FORCEINLINE uint32 GetTypeHash(const FSignalTypeId& InTypeId)
 {
-	return HashCombine(::GetTypeHash(static_cast<uint8>(InTypeId.Domain)), FCrc::StrCrc32(*InTypeId.Name.ToString()));
+	return HashCombine(HashCombine(::GetTypeHash(static_cast<uint8>(InTypeId.Domain)), FCrc::StrCrc32(*InTypeId.Name.ToString())), FCrc::StrCrc32(*InTypeId.ReflectedPath.ToString()));
 }
 
 class ISignalKeyStorage

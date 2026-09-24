@@ -3,7 +3,7 @@
 #include "UObject/Class.h"
 
 FSignalReflectedStructPayloadStorage::FSignalReflectedStructPayloadStorage(const UScriptStruct* InStruct, const void* InValue)
-	: TypeId({ ESignalTypeDomain::BuiltIn, InStruct ? InStruct->GetFName() : NAME_None })
+	: TypeId({ ESignalTypeDomain::BuiltIn, InStruct ? InStruct->GetFName() : NAME_None, InStruct ? FName(InStruct->GetPathName()) : NAME_None })
 {
 	if (InStruct && InValue)
 	{
