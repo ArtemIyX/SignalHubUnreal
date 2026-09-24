@@ -90,8 +90,8 @@ private:
 	ESignalPublishResult PublishBoxed(const FSignalKey& InKey, const FSignalPayload& InPayload);
 	bool HasListeners(const FSignalKey& InKey, const FSignalTypeId& InPayloadType) const;
 	bool Tick(float InDeltaTime);
-	void Dispatch(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth);
-	void DispatchOne(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth);
+	void Dispatch(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth, uint32 InChannelGeneration, uint64 InListenerSerialCutoff);
+	void DispatchOne(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth, uint32 InChannelGeneration, uint64 InListenerSerialCutoff);
 
 	struct FImpl;
 	TSharedPtr<FImpl> Impl;

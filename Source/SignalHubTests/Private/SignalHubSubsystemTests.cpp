@@ -203,4 +203,39 @@ bool FSignalHubWorkerQueueTest::RunTest(const FString& InParameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubQueuedListenerCutoffTest, "SignalHub.Unit.Thread.QueuedListenerCutoff", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubQueuedListenerCutoffTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FName key(TEXT("Unit.QueuedListenerCutoff"));
+	int32 earlyCount = 0;
+	int32 lateCount = 0;
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&earlyCount](const int32, const FSignalContext&) { ++earlyCount; });
+	const TFuture<ESignalPublishResult> result = Async(EAsyncExecution::Thread, [&fixture, key] { return fixture.Hub->Publish(key, 9); });
+	TestEqual(TEXT("Worker publication queues"), result.Get(), ESignalPublishResult::Queued);
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&lateCount](const int32, const FSignalContext&) { ++lateCount; });
+	fixture.Hub->FlushPendingSignals();
+	TestEqual(TEXT("Listener present at publication receives signal"), earlyCount, 1);
+	TestEqual(TEXT("Listener bound after queueing misses signal"), lateCount, 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSignalHubQueuedChannelGenerationTest, "SignalHub.Unit.Thread.QueuedChannelGeneration", SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS)
+
+bool FSignalHubQueuedChannelGenerationTest::RunTest(const FString& InParameters)
+{
+	FSignalHubFixture fixture;
+	const FName key(TEXT("Unit.QueuedChannelGeneration"));
+	int32 replacementCount = 0;
+	const FSignalSubscribeOutcome first = fixture.Hub->Subscribe<int32>(key, nullptr, [](const int32, const FSignalContext&) {});
+	const TFuture<ESignalPublishResult> result = Async(EAsyncExecution::Thread, [&fixture, key] { return fixture.Hub->Publish(key, 9); });
+	TestEqual(TEXT("Worker publication queues"), result.Get(), ESignalPublishResult::Queued);
+	TestTrue(TEXT("Original listener is removed"), fixture.Hub->Unsubscribe(first.Handle));
+	fixture.Hub->Subscribe<int32>(key, nullptr, [&replacementCount](const int32, const FSignalContext&) { ++replacementCount; });
+	fixture.Hub->FlushPendingSignals();
+	TestEqual(TEXT("Queued signal cannot enter replacement channel"), replacementCount, 0);
+	return true;
+}
+
 #undef SIGNAL_HUB_SUBSYSTEM_TEST_FLAGS

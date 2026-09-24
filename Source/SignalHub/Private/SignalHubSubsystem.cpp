@@ -9,6 +9,7 @@ struct USignalHubSubsystem::FImpl
 	struct FListener
 	{
 		int64 Id = 0;
+		uint64 Serial = 0;
 		bool bHasOwner = false;
 		TWeakObjectPtr<UObject> Owner;
 		TFunction<void(const FSignalPayload&, const FSignalContext&)> Callback;
@@ -18,6 +19,7 @@ struct USignalHubSubsystem::FImpl
 	{
 		FSignalTypeId PayloadType;
 		uint32 Generation = 1;
+		uint64 NextListenerSerial = 1;
 		TArray<FListener> Listeners;
 	};
 
@@ -27,6 +29,8 @@ struct USignalHubSubsystem::FImpl
 		FSignalPayload Payload;
 		int64 Sequence = 0;
 		int32 Depth = 0;
+		uint32 ChannelGeneration = 0;
+		uint64 ListenerSerialCutoff = 0;
 	};
 
 	mutable FCriticalSection Lock;
@@ -89,7 +93,7 @@ FSignalSubscribeOutcome USignalHubSubsystem::SubscribeBoxed(const FSignalKey& In
 		return { ESignalSubscribeResult::PayloadTypeMismatch, {} };
 	}
 	const FSignalSubscriptionHandle handle { Impl->NextSubscriptionId++, static_cast<int32>(channel->Generation) };
-	channel->Listeners.Add({ handle.Id, InOwner != nullptr, InOwner, MoveTemp(InCallback) });
+	channel->Listeners.Add({ handle.Id, channel->NextListenerSerial++, InOwner != nullptr, InOwner, MoveTemp(InCallback) });
 	return { ESignalSubscribeResult::Bound, handle };
 }
 
@@ -108,17 +112,21 @@ ESignalPublishResult USignalHubSubsystem::PublishBoxed(const FSignalKey& InKey, 
 	if (!InPayload.IsValid()) return ESignalPublishResult::PayloadTypeMismatch;
 
 	int64 sequence;
+	uint32 channelGeneration;
+	uint64 listenerSerialCutoff;
 	{
 		FScopeLock lock(&Impl->Lock);
 		FImpl::FChannel* channel = Impl->Channels.Find(InKey);
 		if (!channel || channel->Listeners.Num() == 0) return ESignalPublishResult::NoListeners;
 		if (channel->PayloadType != *InPayload.GetTypeId()) return ESignalPublishResult::PayloadTypeMismatch;
 		sequence = Impl->NextSequence++;
+		channelGeneration = channel->Generation;
+		listenerSerialCutoff = channel->NextListenerSerial - 1;
 		if (!IsInGameThread())
 		{
 			if (!InPayload.IsWorkerCopySafe()) return ESignalPublishResult::WrongThreadForPayload;
 			if (Impl->Pending.Num() >= Limits.MaxQueuedSignals) return ESignalPublishResult::QueueFull;
-			Impl->Pending.Add({ InKey, InPayload, sequence });
+			Impl->Pending.Add({ InKey, InPayload, sequence, 0, channelGeneration, listenerSerialCutoff });
 			return ESignalPublishResult::Queued;
 		}
 	}
@@ -127,10 +135,10 @@ ESignalPublishResult USignalHubSubsystem::PublishBoxed(const FSignalKey& InKey, 
 		const int32 depth = CurrentDispatchDepth + 1;
 		if (depth > Limits.MaxCascadeDepth) return ESignalPublishResult::CascadeLimit;
 		FScopeLock lock(&Impl->Lock);
-		Impl->Reentrant.Add({ InKey, InPayload, sequence, depth });
+		Impl->Reentrant.Add({ InKey, InPayload, sequence, depth, channelGeneration, listenerSerialCutoff });
 		return ESignalPublishResult::QueuedReentrant;
 	}
-	Dispatch(InKey, InPayload, sequence, 0);
+	Dispatch(InKey, InPayload, sequence, 0, channelGeneration, listenerSerialCutoff);
 	return ESignalPublishResult::Delivered;
 }
 
@@ -206,38 +214,41 @@ bool USignalHubSubsystem::Tick(float InDeltaTime)
 	}
 	for (const FImpl::FQueuedSignal& signal : batch)
 	{
-		Dispatch(signal.Key, signal.Payload, signal.Sequence, 0);
+		Dispatch(signal.Key, signal.Payload, signal.Sequence, signal.Depth, signal.ChannelGeneration, signal.ListenerSerialCutoff);
 	}
 	return true;
 }
 
-void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth)
+void USignalHubSubsystem::Dispatch(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth, uint32 InChannelGeneration, uint64 InListenerSerialCutoff)
 {
 	if (!Impl || bDispatching) return;
 	bDispatching = true;
 	Impl->Reentrant.Reset();
-	Impl->Reentrant.Add({ InKey, InPayload, InSequence, InDepth });
+	Impl->Reentrant.Add({ InKey, InPayload, InSequence, InDepth, InChannelGeneration, InListenerSerialCutoff });
 	for (int32 index = 0; index < Impl->Reentrant.Num(); ++index)
 	{
 		if (index >= Limits.MaxDispatchesPerRoot) break;
 		const FImpl::FQueuedSignal signal = Impl->Reentrant[index];
 		CurrentDispatchDepth = signal.Depth;
-		DispatchOne(signal.Key, signal.Payload, signal.Sequence, signal.Depth);
+		DispatchOne(signal.Key, signal.Payload, signal.Sequence, signal.Depth, signal.ChannelGeneration, signal.ListenerSerialCutoff);
 	}
 	Impl->Reentrant.Reset();
 	CurrentDispatchDepth = 0;
 	bDispatching = false;
 }
 
-void USignalHubSubsystem::DispatchOne(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth)
+void USignalHubSubsystem::DispatchOne(const FSignalKey& InKey, const FSignalPayload& InPayload, int64 InSequence, int32 InDepth, uint32 InChannelGeneration, uint64 InListenerSerialCutoff)
 {
 	if (!Impl) return;
 	TArray<uint64> listenerIds;
 	{
 		FScopeLock lock(&Impl->Lock);
-		if (const FImpl::FChannel* channel = Impl->Channels.Find(InKey))
+		if (const FImpl::FChannel* channel = Impl->Channels.Find(InKey); channel && channel->Generation == InChannelGeneration)
 		{
-			for (const FImpl::FListener& listener : channel->Listeners) listenerIds.Add(listener.Id);
+			for (const FImpl::FListener& listener : channel->Listeners)
+			{
+				if (listener.Serial <= InListenerSerialCutoff) listenerIds.Add(listener.Id);
+			}
 		}
 	}
 	const FSignalContext context { InSequence, InDepth };
@@ -247,7 +258,7 @@ void USignalHubSubsystem::DispatchOne(const FSignalKey& InKey, const FSignalPayl
 		{
 			FScopeLock lock(&Impl->Lock);
 			FImpl::FChannel* channel = Impl->Channels.Find(InKey);
-			if (!channel) continue;
+			if (!channel || channel->Generation != InChannelGeneration) continue;
 			const FImpl::FListener* listener = channel->Listeners.FindByPredicate([listenerId](const FImpl::FListener& value) { return value.Id == listenerId; });
 			if (!listener || (listener->bHasOwner && !listener->Owner.IsValid())) continue;
 			callback = listener->Callback;
