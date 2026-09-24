@@ -27,10 +27,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (ToolTip = "Stops a SignalHub subscription. Safe to call repeatedly."))
 	static bool StopListeningForSignal(USignalHubSubscription* InSubscription);
 
-	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
-	static USignalHubSubscription* CreateInt32SignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, ESignalSubscribeResult& OutResult);
+	/*UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (WorldContext = "WorldContextObject"))
+	static USignalHubSubscription* CreateInt32SignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, ESignalSubscribeResult& OutResult);*/
 
-	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (WorldContext = "WorldContextObject"))
 	static USignalHubSubscription* CreateSignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, const FSignalBlueprintType& InPayloadType, ESignalSubscribeResult& OutResult);
 
 	UFUNCTION(BlueprintCallable, CustomThunk, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", CustomStructureParam = "Key,Payload", WorldContext = "WorldContextObject"))
