@@ -55,6 +55,47 @@ USignalHubSubscription* USignalHubBlueprintLibrary::CreateInt32SignalSubscriptio
 	return subscription;
 }
 
+USignalHubSubscription* USignalHubBlueprintLibrary::CreateSignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, const FSignalBlueprintType& InPayloadType, ESignalSubscribeResult& OutResult)
+{
+	OutResult = ESignalSubscribeResult::InvalidCallback;
+	USignalHubSubsystem* hub = ResolveHub(WorldContextObject);
+	if (!hub || !InKey.IsValid() || !InPayloadType.IsValid()) return nullptr;
+	USignalHubSubscription* subscription = NewObject<USignalHubSubscription>(hub->GetGameInstance());
+	auto bind = [&]<typename TValue>()
+	{
+		return hub->SubscribePayload(InKey, TSignalTypeTraits<TValue>::Get(), subscription,
+			[weakSubscription = TWeakObjectPtr<USignalHubSubscription>(subscription)](const FSignalPayload& payload, const FSignalContext& context)
+			{
+				if (USignalHubSubscription* activeSubscription = weakSubscription.Get()) activeSubscription->Deliver(payload, context);
+			});
+	};
+	FSignalSubscribeOutcome outcome;
+	switch (InPayloadType.Kind)
+	{
+	case ESignalBlueprintValueKind::Bool: outcome = bind.template operator()<bool>(); break;
+	case ESignalBlueprintValueKind::Byte: outcome = bind.template operator()<uint8>(); break;
+	case ESignalBlueprintValueKind::Int32: outcome = bind.template operator()<int32>(); break;
+	case ESignalBlueprintValueKind::Int64: outcome = bind.template operator()<int64>(); break;
+	case ESignalBlueprintValueKind::UInt32: outcome = bind.template operator()<uint32>(); break;
+	case ESignalBlueprintValueKind::Float: outcome = bind.template operator()<float>(); break;
+	case ESignalBlueprintValueKind::Double: outcome = bind.template operator()<double>(); break;
+	case ESignalBlueprintValueKind::Name: outcome = bind.template operator()<FName>(); break;
+	case ESignalBlueprintValueKind::String: outcome = bind.template operator()<FString>(); break;
+	case ESignalBlueprintValueKind::Struct:
+		outcome = hub->SubscribePayload(InKey, { ESignalTypeDomain::BuiltIn, InPayloadType.StructType->GetFName(), FName(InPayloadType.StructType->GetPathName()) }, subscription,
+			[weakSubscription = TWeakObjectPtr<USignalHubSubscription>(subscription)](const FSignalPayload& payload, const FSignalContext& context)
+			{
+				if (USignalHubSubscription* activeSubscription = weakSubscription.Get()) activeSubscription->Deliver(payload, context);
+			});
+		break;
+	default: return nullptr;
+	}
+	OutResult = outcome.Result;
+	if (!outcome.IsBound()) { subscription->Invalidate(); return nullptr; }
+	subscription->Initialize(hub, outcome.Handle);
+	return subscription;
+}
+
 ESignalPublishResult USignalHubBlueprintLibrary::PublishSignalWildcard(const UObject* WorldContextObject, const int32& InKey, const int32& InPayload)
 {
 	return ESignalPublishResult::InvalidKey;

@@ -30,6 +30,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
 	static USignalHubSubscription* CreateInt32SignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, ESignalSubscribeResult& OutResult);
 
+	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+	static USignalHubSubscription* CreateSignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, const FSignalBlueprintType& InPayloadType, ESignalSubscribeResult& OutResult);
+
 	UFUNCTION(BlueprintCallable, CustomThunk, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", CustomStructureParam = "Key,Payload", WorldContext = "WorldContextObject"))
 	static ESignalPublishResult PublishSignalWildcard(const UObject* WorldContextObject, const int32& InKey, const int32& InPayload);
 	DECLARE_FUNCTION(execPublishSignalWildcard);
