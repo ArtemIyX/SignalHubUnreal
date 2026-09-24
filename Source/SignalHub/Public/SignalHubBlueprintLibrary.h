@@ -27,6 +27,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (ToolTip = "Stops a SignalHub subscription. Safe to call repeatedly."))
 	static bool StopListeningForSignal(USignalHubSubscription* InSubscription);
 
+	UFUNCTION(BlueprintCallable, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+	static USignalHubSubscription* CreateInt32SignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, ESignalSubscribeResult& OutResult);
+
 	UFUNCTION(BlueprintCallable, CustomThunk, Category = "Signal Hub", meta = (BlueprintInternalUseOnly = "true", CustomStructureParam = "Key,Payload", WorldContext = "WorldContextObject"))
 	static ESignalPublishResult PublishSignalWildcard(const UObject* WorldContextObject, const int32& InKey, const int32& InPayload);
 	DECLARE_FUNCTION(execPublishSignalWildcard);

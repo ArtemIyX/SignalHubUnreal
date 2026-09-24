@@ -30,6 +30,31 @@ bool USignalHubBlueprintLibrary::StopListeningForSignal(USignalHubSubscription* 
 	return InSubscription ? InSubscription->Cancel() : false;
 }
 
+USignalHubSubscription* USignalHubBlueprintLibrary::CreateInt32SignalSubscription(const UObject* WorldContextObject, const FSignalKey& InKey, ESignalSubscribeResult& OutResult)
+{
+	OutResult = ESignalSubscribeResult::ShuttingDown;
+	USignalHubSubsystem* hub = ResolveHub(WorldContextObject);
+	if (!hub)
+	{
+		OutResult = ESignalSubscribeResult::InvalidKey;
+		return nullptr;
+	}
+	USignalHubSubscription* subscription = NewObject<USignalHubSubscription>(hub->GetGameInstance());
+	const FSignalSubscribeOutcome outcome = hub->Subscribe<int32>(InKey, subscription,
+		[weakSubscription = TWeakObjectPtr<USignalHubSubscription>(subscription)](const int32& payload, const FSignalContext& context)
+		{
+			if (USignalHubSubscription* activeSubscription = weakSubscription.Get()) activeSubscription->Deliver(MakeSignalPayload(payload), context);
+		});
+	OutResult = outcome.Result;
+	if (!outcome.IsBound())
+	{
+		subscription->Invalidate();
+		return nullptr;
+	}
+	subscription->Initialize(hub, outcome.Handle);
+	return subscription;
+}
+
 ESignalPublishResult USignalHubBlueprintLibrary::PublishSignalWildcard(const UObject* WorldContextObject, const int32& InKey, const int32& InPayload)
 {
 	return ESignalPublishResult::InvalidKey;
